@@ -1,5 +1,5 @@
 import sys
-
+import mazegen
 
 class Configuration():
     def __init__(self, width, height, entry, exit_pos, output_file, perfect):
@@ -26,18 +26,18 @@ class Configuration():
             raise ValueError(f"Invalid value for HEIGHT: {height}")
 
     def set_entry(self, entry):
-        self.ENTRY = self.split_coords(entry, "ENTRY")
+        self.ENTRY = self.split_coords(entry, "ENTRY", self.WIDTH, self.HEIGHT)
 
     def set_exit(self, exit_pos):
-        self.EXIT = self.split_coords(exit_pos, "EXIT")
+        self.EXIT = self.split_coords(exit_pos, "EXIT", self.WIDTH, self.HEIGHT)
 
-    def split_coords(self, coord_str, field_name):
+    def split_coords(self, coord_str: str, field_name: str, width: int, height: int) -> tuple[int, int]:
         try:
             coord_x = int(coord_str.split(",")[0].strip())
             coord_y = int(coord_str.split(",")[1].strip())
-            if coord_x < 0 or coord_y < 0 or coord_x >= self.WIDTH or coord_y >= self.HEIGHT:
+            if coord_x < 0 or coord_y < 0 or coord_x >= width or coord_y >= height:
                 raise ValueError(
-                    f"Coordinates for {field_name} must be within maze dimensions (0 <= x < {self.WIDTH}, 0 <= y < {self.HEIGHT}): {coord_str}")
+                    f"Coordinates for {field_name} must be within maze dimensions (0 <= x < {width}, 0 <= y < {height}): {coord_str}")
             return (coord_x, coord_y)
         except (ValueError, TypeError):
             raise ValueError(
@@ -106,7 +106,7 @@ def read_config(filename):
 
 if __name__ == "__main__":
     if (len(sys.argv) != 2):
-        print("Usage: python a-maze-ing.py <config_file>")
+        print("Usage: python a_maze_ing.py <config_file>")
         sys.exit(1)
 
     maze_config = read_config(sys.argv[1])
