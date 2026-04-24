@@ -19,3 +19,4 @@ class Cell:
 
     def remove_wall(self, direction: Direction) -> None:
         self.walls &= ~direction
+    
