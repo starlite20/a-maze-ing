@@ -1,6 +1,7 @@
 import sys
 import mazegen
 
+
 class Configuration():
     def __init__(self, width, height, entry, exit_pos, output_file, perfect):
         self.set_width(width)
@@ -29,7 +30,8 @@ class Configuration():
         self.ENTRY = self.split_coords(entry, "ENTRY", self.WIDTH, self.HEIGHT)
 
     def set_exit(self, exit_pos):
-        self.EXIT = self.split_coords(exit_pos, "EXIT", self.WIDTH, self.HEIGHT)
+        self.EXIT = self.split_coords(
+            exit_pos, "EXIT", self.WIDTH, self.HEIGHT)
 
     def split_coords(self, coord_str: str, field_name: str, width: int, height: int) -> tuple[int, int]:
         try:
@@ -116,4 +118,3 @@ if __name__ == "__main__":
     except ValueError as e:
         print(f"Error: {e}")
         sys.exit(1)
-

@@ -1,5 +1,25 @@
+from enum import IntFlag
+from dataclasses import dataclass
 import random
-from .cell import Cell, Direction
+
+
+class Direction(IntFlag):
+    NORTH = 1
+    EAST = 2
+    SOUTH = 4
+    WEST = 8
+
+
+@dataclass
+class Cell:
+    x: int
+    y: int
+    walls: int = 15
+    visited: bool = False
+
+    def remove_wall(self, direction: Direction) -> None:
+        self.walls &= ~direction
+
 
 class Color:
     RED = '\033[91m'
@@ -9,6 +29,7 @@ class Color:
     GREY = '\033[90m'
     RESET = '\033[0m'
     BOLD = '\033[1m'
+
 
 class MazeGenerator:
     def __init__(self, width: int, height: int, entry: tuple[int, int], exit_pos: tuple[int, int], perfect: bool, seed: int = None):
@@ -110,19 +131,19 @@ class MazeGenerator:
         # North (x, y-1)
         if y > 0 and not self.grid[y-1][x].visited:
             neighbours.append(self.grid[y-1][x])
-        
+
         # East (x+1, y)
         if x < self.width - 1 and not self.grid[y][x+1].visited:
             neighbours.append(self.grid[y][x+1])
-        
+
         # South (x, y+1)
         if y < self.height - 1 and not self.grid[y+1][x].visited:
             neighbours.append(self.grid[y+1][x])
-        
+
         # West (x-1, y)
         if x > 0 and not self.grid[y][x-1].visited:
             neighbours.append(self.grid[y][x-1])
-        
+
         return neighbours
 
     def _remove_walls(self, current: Cell, next_cell: Cell):
@@ -134,33 +155,34 @@ class MazeGenerator:
         if dx == 1:
             current.remove_wall(Direction.WEST)
             next_cell.remove_wall(Direction.EAST)
-        
+
         # Next is to the East
-        elif dx == -1: 
+        elif dx == -1:
             current.remove_wall(Direction.EAST)
             next_cell.remove_wall(Direction.WEST)
-        
+
         # Next is to the North
-        if dy == 1: 
+        if dy == 1:
             current.remove_wall(Direction.NORTH)
             next_cell.remove_wall(Direction.SOUTH)
-        
+
         # Next is to the South
-        elif dy == -1: 
+        elif dy == -1:
             current.remove_wall(Direction.SOUTH)
             next_cell.remove_wall(Direction.NORTH)
 
-    
     def generate_maze_DFS(self) -> None:
         for row in self.grid:
             for cell in row:
                 cell.visited = False
-        
+
         start_cell = self.grid[self.entry[1]][self.entry[0]]
         start_cell.visited = True
 
+        random.seed(self.seed)
+
         stack = [start_cell]
-        while(len(stack) > 0):
+        while (len(stack) > 0):
             current = stack[-1]
 
             neighbours = self.get_unvisited_neighbours(current.x, current.y)
@@ -170,14 +192,10 @@ class MazeGenerator:
 
                 next_cell_to_go.visited = True
                 stack.append(next_cell_to_go)
-            
+
             else:
                 stack.pop()
 
-            print(stack)
-            
-
-            
 
 if __name__ == "__main__":
     mg = MazeGenerator(20, 20, (0, 0), (9, 9), True, seed=42)
