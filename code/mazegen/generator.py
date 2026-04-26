@@ -67,7 +67,6 @@ class MazeGenerator:
                 )
         self.seed = seed if seed > 0 else random.randint(0, 2**32 - 1)
 
-        self.color_mode = 0
         self.grid: list[list[Cell]] = []
 
     def create_grid(self) -> None:
@@ -127,7 +126,7 @@ class MazeGenerator:
             current.remove_wall(Direction.SOUTH)
             next_cell.remove_wall(Direction.NORTH)
 
-    def generate_maze(self, algorithm: str | None):
+    def generate_maze(self, algorithm: str = "DFS"):
         self.create_grid()
 
         if algorithm == "DFS":

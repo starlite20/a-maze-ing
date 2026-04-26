@@ -11,14 +11,17 @@ class Color:
     BOLD = '\033[1m'
 
 
-def display_maze(maze: MazeGenerator, display_mode: str | None) -> None:
+def display_maze(
+        maze: MazeGenerator, display_mode: str | None,
+        color_mode: int = 0
+) -> None:
     if display_mode == "ASCII":
-        show_ascii_maze(maze)
+        show_ascii_maze(maze, color_mode)
     elif display_mode == "MLX":
         pass
 
 
-def show_ascii_maze(maze: MazeGenerator) -> None:
+def show_ascii_maze(maze: MazeGenerator, color_mode: int) -> None:
     WALL = "█"
     SPACE = " "
 
@@ -29,19 +32,18 @@ def show_ascii_maze(maze: MazeGenerator) -> None:
         # Must be exactly 3 visible characters wide
         if (row, column) == maze.entry:
             content = "[] "
-            if maze.color_mode == 1:
+            if color_mode == 1:
                 return colored(content, Color.GREY)
             return colored(content, Color.PURPLE + Color.BOLD)
 
         if (row, column) == maze.exit:
             content = "[] "
-            if maze.color_mode == 1:
+            if color_mode == 1:
                 return colored(content, Color.GREY)
             return colored(content, Color.RED + Color.BOLD)
 
         return "   "
 
-    row_num = 0
     for row in range(maze.height):
         top_line = WALL
 
@@ -55,8 +57,6 @@ def show_ascii_maze(maze: MazeGenerator) -> None:
             top_line += WALL
 
         print(top_line)
-        # print(str(row_num) + "   " + top_line)
-        row_num += 1
 
         # Draw the west/east walls and cell contents
         mid_line = ""
