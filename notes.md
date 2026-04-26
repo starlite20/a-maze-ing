@@ -33,3 +33,16 @@ DFS is the best fit, as it guarantees the perfect maze path, and also bydefault 
 We run perfect maze generation first, and then iteratively remove a few walls and continuously ensure this doesnt create a larger corridor by chance.
 
 
+
+# Maze Generation
+We are using the DFS algorithm in a iterative manner, rather than a recursive approach. This is to ensure that we dont hit limits of recursion in Python. 
+
+
+# Visual Representation
+We have set up a basic ASCII terminal reporesentation of the maze. It shows the walls, the open pathways and the entry and exit point. 
+
+## Minilibx
+Inorder to use the Minilibx functionality, we will need to install the mlx library provided from the subject. 
+This is because, minilibx is originally a C Program. Inorder to work with Python here, the installed package will work as a wrapper to help acheive this.
+
+Install within virtual environment

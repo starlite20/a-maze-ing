@@ -198,7 +198,7 @@ class MazeGenerator:
 
 
 if __name__ == "__main__":
-    mg = MazeGenerator(20, 20, (0, 0), (9, 9), True, seed=42)
+    mg = MazeGenerator(10, 10, (0, 0), (9, 9), True, seed=3)
     mg.create_grid()
     mg.generate_maze_DFS()
     mg.print_grid()
