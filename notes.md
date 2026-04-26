@@ -32,6 +32,24 @@ DFS is the best fit, as it guarantees the perfect maze path, and also bydefault 
 # Imperfect Maze Generation
 We run perfect maze generation first, and then iteratively remove a few walls and continuously ensure this doesnt create a larger corridor by chance.
 
+# Corridor Conditioning
+Corridor / Open Spaces must not reach 3x3 at any point.
+Here is a sample corridor of 3x3.
+913
+802
+C46
+
+Based on the algorithm I have set, it will go through each cell from top left to bottom right.
+We check the cells ignoring the last row and column, to have a controlled imperfect maze generation.
+
+We check using the 3x3 open check function.
+Initially we verify if the neighbouring cells are hitting bounds, or if any of them have a RIGHT or BOTTOM wall.
+We verify walls using bit wise operation.
+This would mean that the 3x3 is not possible to form.
+
+if so far its all good, we return True stating that 3x3 open area is found.
+
+
 
 
 # Maze Generation

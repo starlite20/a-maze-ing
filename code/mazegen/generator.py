@@ -196,6 +196,84 @@ class MazeGenerator:
             else:
                 stack.pop()
 
+    def _is_3x3_open(self, center_cell_col: int, center_cell_row: int) -> bool:
+        # if the surrounding neighbour has the chance of crossing border, it means its not a 3x3 open space
+        if (center_cell_col - 1 < 0 or center_cell_col + 1 >= self.width or 
+            center_cell_row - 1 < 0 or center_cell_row + 1 >= self.height):
+            return False
+
+        # checking all 6 internal EAST - rightside - walls
+        # checking top mid and bottom rows
+        for row_offset in range(-1, 2): 
+            # checking left and mid cols
+            for col_offset in range(-1, 1):
+                col = center_cell_col + col_offset
+                row = center_cell_row + row_offset
+                
+                # we're doing bitwise operator check here
+                # walls sum value   AND   east value
+                if self.grid[row][col].walls & Direction.EAST:
+                    return False
+
+        # similarly checking 6 internal SOUTH - bottomside - walls.
+        # checking top mid
+        for row_offset in range(-1, 1):
+            # checking left and mid and right cols
+            for col_offset in range(-1, 2):
+                col = center_cell_col + col_offset
+                row = center_cell_row + row_offset
+
+                # walls sum value   AND   south value
+                if self.grid[row][col].walls & Direction.SOUTH:
+                    return False
+
+        # if no internal East or South walls were found, it's a 3x3 open area
+        return True
+    
+
+    # working on this imperfection creator by making the algorithm consider only n-1 rows and columns. ignoring the last.
+    def generate_imperfect_maze(self) -> None:
+        imperfectness_factor = 15
+
+        internal_walls = ((self.width - 1) * self.height) + (self.width * (self.height - 1))
+        walls_to_remove = int(internal_walls * imperfectness_factor * 0.01)
+
+        removed_count = 0
+        
+        while removed_count < walls_to_remove:
+            random_cell_x = random.randint(0, self.width - 1)
+            random_cell_y = random.randint(0, self.height - 1)
+            
+            # as we are ignoring the last row and column, we will focus on eliminating walls on the right and down only.
+            # creating a safe approach.
+            neighbor_x = random_cell_x
+            neighbor_y = random_cell_y
+            direction = random.choice([Direction.EAST, Direction.SOUTH])
+            if direction == Direction.EAST and random_cell_x < self.width - 1:
+                neighbor_x += 1
+            elif direction == Direction.SOUTH and random_cell_y < self.height - 1:
+                neighbor_y += 1
+            else:
+                continue
+                # direction chosen will hit a border, ignore iteration.
+                
+            current_cell = self.grid[random_cell_y][random_cell_x]
+            neighbor_cell = self.grid[neighbor_y][neighbor_x]
+            
+            if not (current_cell.walls & direction):
+                # if wall doesnt exist, skip this iteration
+                continue
+                
+            # LARGE CORRIDOR CHECK
+            # We check the 3x3 box centered on the CURRENT cell, AND the NEIGHBOR cell.
+            if self._is_3x3_open(random_cell_x, random_cell_y) or self._is_3x3_open(neighbor_x, neighbor_y):
+                continue
+                # skip this iteration as this is a large corridor.
+                
+            # all safe... remove walls
+            self._remove_walls(current_cell, neighbor_cell)
+            removed_count += 1
+
 
 if __name__ == "__main__":
     mg = MazeGenerator(10, 10, (0, 0), (9, 9), True, seed=3)
@@ -204,3 +282,4 @@ if __name__ == "__main__":
     mg.print_grid()
     print()
     mg.display_maze()
+    mg.generate_imperfect_maze()
