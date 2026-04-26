@@ -6,3 +6,11 @@ EXIT=14,14
 OUTPUT_FILE=maze.txt
 PERFECT=True
 
+#remove if needing random SEED
+# SEED=5
+
+# algorithm for maze creation
+ALGORITHM=DFS
+
+# display mode (ASCII / MLX)
+DISPLAY_MODE=ASCII
