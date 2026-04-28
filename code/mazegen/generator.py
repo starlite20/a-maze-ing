@@ -24,50 +24,59 @@ class Cell:
 class MazeGenerator:
     def __init__(
         self, width: int, height: int,
-        entry: tuple[int, int], exit_pos: tuple[int, int],
+        entry_pos: tuple[int, int], exit_pos: tuple[int, int],
         perfect: bool, seed: int
     ) -> None:
+        self.set_width(width)
+        self.set_height(height)
+        self.set_entry_exit_pos(entry_pos, exit_pos)
+        self.set_perfect(perfect)
+        self.set_seed(seed)
+        self.grid: list[list[Cell]] = []
 
+    def set_width(self, width: int):
         if not isinstance(width, int) or width < 2:
             raise ValueError(f"Width must be an integer >= 2. Got: {width}")
         self.width = width
 
+    def set_height(self, height: int):
         if not isinstance(height, int) or height < 2:
             raise ValueError(f"Height must be an integer >= 2. Got: {height}")
         self.height = height
 
-        def is_valid_coord(coord: tuple[int, int], name: str) -> None:
-            if not (isinstance(coord, tuple) and len(coord) == 2 and
-                    all(isinstance(i, int) for i in coord)):
-                raise ValueError(
-                    f"{name} must be a tuple of two integers. Got: {coord}")
-            x, y = coord
-            if not (0 <= x < self.width and 0 <= y < self.height):
-                raise ValueError(
-                    f"{name} coordinates out of bounds. Got: {coord}")
+    def _is_valid_coord(self, coord: tuple[int, int], name: str) -> None:
+        if not (isinstance(coord, tuple) and len(coord) == 2 and
+                all(isinstance(i, int) for i in coord)):
+            raise ValueError(
+                f"{name} must be a tuple of two integers. Got: {coord}")
+        x, y = coord
+        if not (0 <= x < self.width and 0 <= y < self.height):
+            raise ValueError(
+                f"{name} coordinates out of bounds. Got: {coord}")
 
-        is_valid_coord(entry, "Entry")
-        is_valid_coord(exit_pos, "Exit")
+    def set_entry_exit_pos(self, entry_pos: tuple[int, int], exit_pos: tuple[int, int]) -> None:
+        self._is_valid_coord(entry_pos, "Entry")
+        self._is_valid_coord(exit_pos, "Exit")
 
-        if entry == exit_pos:
+        if entry_pos == exit_pos:
             raise ValueError("Entry and Exit coordinates must be different.")
 
-        self.entry = entry
+        self.entry = entry_pos
         self.exit = exit_pos
 
+    def set_perfect(self, perfect: bool) -> None:
         if not isinstance(perfect, bool):
             raise ValueError(
                 f"Perfect must be a boolean. Got: {type(perfect)}"
-                )
+            )
         self.perfect = perfect
 
+    def set_seed(self, seed: int) -> None:
         if seed is not None and not isinstance(seed, int):
             raise ValueError(
                 f"Seed must be an integer or None. Got: {type(seed)}"
-                )
+            )
         self.seed = seed if seed > 0 else random.randint(0, 2**32 - 1)
-
-        self.grid: list[list[Cell]] = []
 
     def create_grid(self) -> None:
         # Nested list comprehension for the 2D grid
