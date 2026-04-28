@@ -39,7 +39,7 @@ def write_output_file(maze: MazeGenerator, config: Configuration, solution: str)
         with open(config.OUTPUT_FILE, 'w') as output_file:
             output_file.write(
                 maze_txt + "\n" + entry_str + exit_str + solution_str
-                )
+            )
     except Exception as e:
         print(f"Error while writing to file : {e}")
 
