@@ -21,6 +21,23 @@ def create_maze(maze_config: dict) -> tuple[MazeGenerator, Configuration]:
     return (created_maze, validated_config)
 
 
+def write_output_file(maze: MazeGenerator, config: Configuration, solution: str) -> None:
+    maze_txt = ""
+    for row in maze.grid:
+        for cell in row:
+            maze_txt += f"{cell.walls:X}"
+        maze_txt += "\n"
+    # print(maze_txt)
+    # print()
+    # print(solution)
+
+    try:
+        with open(config.OUTPUT_FILE, 'w') as writefile:
+            writefile.write(maze_txt + "\n" + solution)
+    except Exception as e:
+        print(f"Error while writing to file : {e}")
+
+
 if __name__ == "__main__":
     if (len(sys.argv) != 2):
         print("Usage: python a_maze_ing.py <config_file>")
@@ -39,5 +56,6 @@ if __name__ == "__main__":
     if maze is not None:
         # maze.print_grid()
         # print()
-        display_maze(maze, config.DISPLAY_MODE)
+        # display_maze(maze, config.DISPLAY_MODE)
         # maze.print_grid()
+        write_output_file(maze, config, maze.solve_maze())

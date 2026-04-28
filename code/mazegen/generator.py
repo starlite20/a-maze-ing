@@ -1,6 +1,7 @@
 from enum import IntFlag
 from dataclasses import dataclass
 import random
+from typing import List
 
 
 class Direction(IntFlag):
@@ -16,6 +17,9 @@ class Cell:
     y: int
     walls: int = 15
     visited: bool = False
+
+    def get_position(self) -> tuple[int, int]:
+        return (self.x, self.y)
 
     def remove_wall(self, direction: Direction) -> None:
         self.walls &= ~direction
@@ -34,6 +38,8 @@ class MazeGenerator:
         self.set_seed(seed)
         self.grid: list[list[Cell]] = []
 
+    # =============================
+    # custom validators
     def set_width(self, width: int):
         if not isinstance(width, int) or width < 2:
             raise ValueError(f"Width must be an integer >= 2. Got: {width}")
@@ -77,6 +83,9 @@ class MazeGenerator:
                 f"Seed must be an integer or None. Got: {type(seed)}"
             )
         self.seed = seed if seed > 0 else random.randint(0, 2**32 - 1)
+
+    # =============================
+    # maze generation
 
     def create_grid(self) -> None:
         # Nested list comprehension for the 2D grid
@@ -206,8 +215,8 @@ class MazeGenerator:
         # if no internal East or South walls were found, it's a 3x3 open area
         return True
 
-    # working on this imperfection creator by making the algorithm consider only n-1 rows and columns. ignoring the last.
     def _generate_imperfections(self) -> None:
+        # consider only n-1 rows and columns. ignoring the last.
         imperfectness_factor = 5
 
         internal_walls = ((self.width - 1) * self.height) + \
@@ -250,19 +259,70 @@ class MazeGenerator:
             self._remove_walls(current_cell, neighbor_cell)
             removed_count += 1
 
+    # =============================
+    # Maze Solving Algorithm One - BFS
+    # suitable for finding one path only... therefore, best for perfect maze.
+    def solve_maze(self):
+        if not self.grid:
+            raise ValueError("Maze not generated yet...")
 
-# if __name__ == "__main__":
-#     # print("Welcome to the Maze Generator!")
-#     # print("Enter the following values in a comma separted manner")
-#     # print("height_size, width_size, entry_x, entry_y, end_x, end_y, perfect_maze_bool")
-#     # inputs = input()
-#     # height, width, entry_x, entry_y, end_x, end_y, perfect_maze_bool = inputs.split(',').strip()
-#     # mg = MazeGenerator(height, width, (entry_x, entry_y), (end_x, end_y), perfect_maze_bool, seed=3)
+        start_x, start_y = self.entry
+        end_x, end_y = self.exit
 
-#     mg = MazeGenerator(10, 10, (0, 0), (9, 9), False, seed=3)
-#     mg.generate_maze("DFS")
-#     mg.print_grid()
-#     print()
-#     mg.display_maze("ASCII")
-#     mg.print_grid()
-#     print()
+        grid_visit_flag = [[False for _ in range(
+            self.width)] for _ in range(self.height)]
+
+        grid_visit_flag[start_y][start_x] = True
+
+        # dictionary to keep track of path each cell was reached from.
+        cell_from = {}
+        cell_from[(start_x, start_y)] = None
+
+        # to keep track of the nodes we currently traversed
+        queue = [(start_x, start_y)]
+
+        moves = [
+            (Direction.NORTH, 0, -1, "N"),
+            (Direction.EAST, 1, 0, "E"),
+            (Direction.SOUTH, 0, 1, "S"),
+            (Direction.WEST, -1, 0, "W")
+        ]
+
+        while len(queue) > 0:
+            current_x, current_y = queue.pop(0)
+
+            if current_x == end_x and current_y == end_y:
+                break
+
+            current_cell = self.grid[current_y][current_x]
+
+            for direction, dir_x, dir_y, dir_txt in moves:
+                next_x = current_x + dir_x
+                next_y = current_y + dir_y
+
+                if 0 <= next_x < self.width and 0 <= next_y < self.height:
+                    if not current_cell.walls & direction:
+                        if not grid_visit_flag[next_y][next_x]:
+                            grid_visit_flag[next_y][next_x] = True
+
+                            cell_from[(next_x, next_y)] = (
+                                current_x, current_y, dir_txt)
+                            queue.append((next_x, next_y))
+
+        # Retracing Path
+        path = []
+        step = (end_x, end_y)
+
+        while step is not None:
+            data = cell_from.get(step)
+
+            # if none, it means we reached the start point
+            if data is None:
+                break
+
+            prev_x, prev_y, prev_dir_txt = data
+            path.append(prev_dir_txt)
+            step = (prev_x, prev_y)
+
+        path.reverse()
+        return "".join(path)
