@@ -94,7 +94,7 @@ def run_interactive_mode(config: Configuration) -> None:
         elif choice == '2' and generated_once:
             show_path = not show_path
         elif choice == '3':
-            color_mode = (color_mode + 1) % 2
+            color_mode = (color_mode + 1) % len(list(Color))
         elif choice == '4':
             open_settings_menu(config)
         elif choice == '5' and generated_once:
