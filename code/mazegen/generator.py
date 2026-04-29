@@ -17,6 +17,7 @@ class Cell:
     y: int
     walls: int = 15
     visited: bool = False
+    pattern: bool = False
 
     def get_position(self) -> tuple[int, int]:
         return (self.x, self.y)
@@ -29,13 +30,14 @@ class MazeGenerator:
     def __init__(
         self, width: int, height: int,
         entry_pos: tuple[int, int], exit_pos: tuple[int, int],
-        perfect: bool, seed: int
+        perfect: bool, seed: int, pattern_42: bool = False
     ) -> None:
         self.set_width(width)
         self.set_height(height)
         self.set_entry_exit_pos(entry_pos, exit_pos)
         self.set_perfect(perfect)
         self.set_seed(seed)
+        self.set_pattern_42(pattern_42)
         self.grid: list[list[Cell]] = []
 
     # =============================
@@ -84,15 +86,26 @@ class MazeGenerator:
             )
         self.seed = seed if seed > 0 else random.randint(0, 2**32 - 1)
 
+    def set_pattern_42(self, embed_pattern: bool = False) -> None:
+        if not isinstance(embed_pattern, bool):
+            raise ValueError(
+                f"Perfect must be a boolean. Got: {type(embed_pattern)}"
+            )
+        self.embed_pattern = embed_pattern
+
     # =============================
     # maze generation
 
     def create_grid(self) -> None:
-        # Nested list comprehension for the 2D grid
-        self.grid = [
-            [Cell(x, y) for x in range(self.width)]
-            for y in range(self.height)
-        ]
+        self.grid = []
+        for y in range(self.height):
+            row = []
+            for x in range(self.width):
+                new_cell = Cell(x, y)
+                new_cell.visited = False
+                new_cell.pattern = False
+                row.append(new_cell)
+            self.grid.append(row)
 
     def print_grid(self) -> None:
         for row in self.grid:
@@ -102,25 +115,25 @@ class MazeGenerator:
         neighbours = []
 
         # North (x, y-1)
-        if y > 0 and not self.grid[y-1][x].visited:
+        if y > 0 and not self.grid[y-1][x].visited and not self.grid[y-1][x].pattern:
             neighbours.append(self.grid[y-1][x])
 
         # East (x+1, y)
-        if x < self.width - 1 and not self.grid[y][x+1].visited:
+        if x < self.width - 1 and not self.grid[y][x+1].visited and not self.grid[y][x+1].pattern:
             neighbours.append(self.grid[y][x+1])
 
         # South (x, y+1)
-        if y < self.height - 1 and not self.grid[y+1][x].visited:
+        if y < self.height - 1 and not self.grid[y+1][x].visited and not self.grid[y+1][x].pattern:
             neighbours.append(self.grid[y+1][x])
 
         # West (x-1, y)
-        if x > 0 and not self.grid[y][x-1].visited:
+        if x > 0 and not self.grid[y][x-1].visited and not self.grid[y][x-1].pattern:
             neighbours.append(self.grid[y][x-1])
 
         return neighbours
 
     def _remove_walls(self, current: Cell, next_cell: Cell):
-        # Calculate the difference in position to find direction
+        # calculate the difference in position to find direction
         dx = current.x - next_cell.x
         dy = current.y - next_cell.y
 
@@ -147,6 +160,9 @@ class MazeGenerator:
     def generate_maze(self, algorithm: str = "DFS"):
         self.create_grid()
 
+        if self.embed_pattern:
+            self.embed_42_pattern()
+
         if algorithm == "DFS":
             self._generate_maze_DFS()
         else:
@@ -157,10 +173,6 @@ class MazeGenerator:
         pass
 
     def _generate_maze_DFS(self) -> None:
-        for row in self.grid:
-            for cell in row:
-                cell.visited = False
-
         start_cell = self.grid[self.entry[1]][self.entry[0]]
         start_cell.visited = True
 
@@ -245,6 +257,9 @@ class MazeGenerator:
             current_cell = self.grid[random_cell_y][random_cell_x]
             neighbor_cell = self.grid[neighbor_y][neighbor_x]
 
+            if current_cell.pattern or neighbor_cell.pattern:
+                continue
+
             if not (current_cell.walls & direction):
                 # if wall doesnt exist, skip this iteration
                 continue
@@ -326,3 +341,45 @@ class MazeGenerator:
 
         path.reverse()
         return "".join(path)
+
+    # =============================
+    # 42 Pattern Embedding
+
+    def embed_42_pattern(self):
+        pattern_map = [
+            "1000111",
+            "1000001",
+            "1110111",
+            "0010100",
+            "0010111"
+        ]
+
+        pattern_width = len(pattern_map[0])
+        pattern_height = len(pattern_map)
+
+        if self.width < pattern_width or self.height < pattern_height:
+            print("Error: Maze too small to embed '42' pattern.")
+            return
+
+        pattern_start_x = (self.width // 2) - (pattern_width // 2)
+        pattern_start_y = (self.height // 2) - (pattern_height // 2)
+
+        blocked_coords = []
+
+        for y_offset, row in enumerate(pattern_map):
+            for x_offset, point in enumerate(row):
+                if point == "1":
+                    blocked_coords.append(
+                        (pattern_start_x + x_offset, pattern_start_y + y_offset))
+
+        if self.entry in blocked_coords:
+            raise ValueError(
+                f"Error: Entry {self.entry} conflicts with '42' pattern.")
+        if self.exit in blocked_coords:
+            raise ValueError(
+                f"Error: Exit {self.exit} conflicts with '42' pattern.")
+
+        for (x, y) in blocked_coords:
+            if 0 <= y < self.height and 0 <= x < self.width:
+                self.grid[y][x].visited = True
+                self.grid[y][x].pattern = True

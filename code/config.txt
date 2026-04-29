@@ -1,4 +1,3 @@
-#Comment Line Check
 WIDTH=15
 HEIGHT=15
 ENTRY=0,0
@@ -6,7 +5,14 @@ EXIT=14,14
 OUTPUT_FILE=maze.txt
 PERFECT=False
 
-#remove if needing random SEED
+
+#optional parameters
+#===========================
+
+#get all features and runs 
+INTERACTIVE_MODE=True
+
+#seed for randomness
 # SEED=5
 
 # algorithm for maze creation
@@ -14,3 +20,6 @@ ALGORITHM=DFS
 
 # display mode (ASCII / MLX)
 DISPLAY_MODE=ASCII
+
+#embed 42 pattern
+PATTERN_42=True

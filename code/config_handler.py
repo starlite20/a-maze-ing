@@ -5,7 +5,7 @@ class Configuration():
     def __init__(
             self, width, height, entry, exit_pos,
             output_file, perfect, seed, algorithm,
-            display_mode) -> None:
+            display_mode, pattern_42, interactive_mode) -> None:
         self.set_width(width)
         self.set_height(height)
         self.set_entry(entry)
@@ -15,12 +15,22 @@ class Configuration():
         self.set_seed(seed)
         self.set_algorithm(algorithm)
         self.set_display_mode(display_mode)
+        self.set_embed_pattern(pattern_42)
+        self.set_interactive_mode(interactive_mode)
 
     def __str__(self):
         return (
-            f"Configuration(WIDTH={self.WIDTH}, HEIGHT={self.HEIGHT}, "
-            f"ENTRY={self.ENTRY}, EXIT={self.EXIT}, "
-            f"OUTPUT_FILE='{self.OUTPUT_FILE}', PERFECT={self.PERFECT})"
+            f"WIDTH={self.WIDTH}"
+            f"HEIGHT={self.HEIGHT}"
+            f"ENTRY={self.ENTRY[0]}, {self.ENTRY[1]}"
+            f"EXIT={self.EXIT[0]}, {self.EXIT[1]}"
+            f"OUTPUT_FILE={self.OUTPUT_FILE}"
+            f"PERFECT={'True' if self.PERFECT else 'False'}"
+            f"SEED={self.SEED}"
+            f"ALGORITHM={self.ALGORITHM}"
+            f"DISPLAY_MODE={self.DISPLAY_MODE}"
+            f"PATTERN_42={'True' if self.PATTERN_42 else 'False'}"
+            f"INTERACTIVE_MODE={'True' if self.INTERACTIVE_MODE else 'False'}"
         )
 
     def set_width(self, width):
@@ -67,6 +77,16 @@ class Configuration():
             raise ValueError(f"Invalid value for PERFECT: {perfect}")
         self.PERFECT = True if perfect == "True" else False
 
+    def set_embed_pattern(self, embed_pattern):
+        if embed_pattern not in ["True", "False"]:
+            raise ValueError(f"Invalid value for PATTERN_42: {embed_pattern}")
+        self.PATTERN_42 = True if embed_pattern == "True" else False
+
+    def set_interactive_mode(self, interactive_mode):
+        if interactive_mode not in ["True", "False"]:
+            raise ValueError(f"Invalid value for INTERACTIVE_MODE: {interactive_mode}")
+        self.INTERACTIVE_MODE = True if interactive_mode == "True" else False
+
     def set_seed(self, seed):
         try:
             if seed != "":
@@ -93,6 +113,34 @@ class Configuration():
     def set_output_file(self, output_file):
         self.OUTPUT_FILE = output_file
 
+    def update_value(self, key: str, value: str) -> None:
+        if not isinstance(key, str):
+            raise TypeError("Key must be a string.")
+
+        key = key.upper()
+        if key == "WIDTH":
+            self.set_width(value)
+        elif key == "HEIGHT":
+            self.set_height(value)
+        elif key == "ENTRY":
+            self.set_entry(value)
+        elif key == "EXIT":
+            self.set_exit(value)
+        elif key == "PERFECT":
+            self.set_perfect(value)
+        elif key == "SEED":
+            self.set_seed(value)
+        elif key == "ALGORITHM":
+            self.set_algorithm(value)
+        elif key == "DISPLAY_MODE":
+            self.set_display_mode(value)
+        elif key == "PATTERN_42":
+            self.set_embed_pattern(value)
+        elif key == "OUTPUT_FILE":
+            self.OUTPUT_FILE = value
+        else:
+            raise ValueError(f"Unknown configuration key: {key}")
+
 
 def validate_and_cast_config(config) -> Configuration:
     # Ensure all required keys are present in Configuration File
@@ -115,7 +163,9 @@ def validate_and_cast_config(config) -> Configuration:
         perfect=config["PERFECT"],
         seed=config["SEED"] if "SEED" in config else "",
         algorithm=config["ALGORITHM"] if "ALGORITHM" in config else "",
-        display_mode=config["DISPLAY_MODE"] if "DISPLAY_MODE" in config else ""
+        display_mode=config["DISPLAY_MODE"] if "DISPLAY_MODE" in config else "",
+        pattern_42=config["PATTERN_42"] if "PATTERN_42" in config else "False",
+        interactive_mode=config["INTERACTIVE_MODE"] if "INTERACTIVE_MODE" in config else "False"
     )
 
     return configuration
