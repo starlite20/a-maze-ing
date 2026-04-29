@@ -1,4 +1,3 @@
-
 # Maze Cell
 Each cell can have a max value of 15. This is a combination of 2^3 + 2^2 + 2^1 + 2^0.
 	0 = North
@@ -55,6 +54,14 @@ if so far its all good, we return True stating that 3x3 open area is found.
 # Maze Generation
 We are using the DFS algorithm in a iterative manner, rather than a recursive approach. This is to ensure that we dont hit limits of recursion in Python. 
 
+## Embedding the 42 Logo
+The approach is simple. We set up the pattern map in a 2D List, and use this as the reference to block the cells that are needed for the pattern to be achieved. This logo embedding into the maze will be run prior to wall carving using any of the algorithms. So the moment we create a blank grid, we block the cells we need for the pattern. Following which, we add an additional condition check to verify if the cell is blocked for a pattern or not, before removing any wall.
+
+
+# Maze Solving
+## BFS
+We traverse from the entry point cell, by collection all unvisited neigbours which have a direct path, and move towards it. As BFS requires first in, first out, we use a Queue Data Structure Pattern to achieve this. The moment we identify the exit point, we stop traversing, and begin retracing the path towards the entry, and note the path how it reached here.
+
 
 # Visual Representation
 We have set up a basic ASCII terminal reporesentation of the maze. It shows the walls, the open pathways and the entry and exit point. 
@@ -64,3 +71,24 @@ Inorder to use the Minilibx functionality, we will need to install the mlx libra
 This is because, minilibx is originally a C Program. Inorder to work with Python here, the installed package will work as a wrapper to help acheive this.
 
 Install within virtual environment
+
+
+
+# Configuration
+```
+# Essential Environment Variables
+WIDTH = <width of the grid>
+HEIGHT = <height of the grid>
+ENTRY = <coordinate of start point>
+EXIT = <coordinate of end point>
+OUTPUT_FILE = <output file name>
+PERFECT = <boolean  to state if the maze should be perfect or not>
+
+
+#optional parameters
+INTERACTIVE_MODE = <boolean to state if you want the interactive mode on>
+SEED = <randomness seed value>
+ALGORITHM = <algorithm to be used for the maze generation>
+DISPLAY_MODE = <display mode either ascii or mlx>
+PATTERN_42 = <boolean to state if you want 42 pattern within the maze>
+```
