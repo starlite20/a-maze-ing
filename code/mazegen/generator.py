@@ -1,7 +1,6 @@
 from enum import IntFlag
 from dataclasses import dataclass
 import random
-from typing import List
 
 
 class Direction(IntFlag):
@@ -358,8 +357,7 @@ class MazeGenerator:
         pattern_height = len(pattern_map)
 
         if self.width < pattern_width or self.height < pattern_height:
-            print("Error: Maze too small to embed '42' pattern.")
-            return
+            raise ValueError("Maze too small to embed '42' pattern.")
 
         pattern_start_x = (self.width // 2) - (pattern_width // 2)
         pattern_start_y = (self.height // 2) - (pattern_height // 2)
@@ -374,10 +372,10 @@ class MazeGenerator:
 
         if self.entry in blocked_coords:
             raise ValueError(
-                f"Error: Entry {self.entry} conflicts with '42' pattern.")
+                f"Entry {self.entry} conflicts with '42' pattern.")
         if self.exit in blocked_coords:
             raise ValueError(
-                f"Error: Exit {self.exit} conflicts with '42' pattern.")
+                f"Exit {self.exit} conflicts with '42' pattern.")
 
         for (x, y) in blocked_coords:
             if 0 <= y < self.height and 0 <= x < self.width:

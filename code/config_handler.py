@@ -84,7 +84,8 @@ class Configuration():
 
     def set_interactive_mode(self, interactive_mode):
         if interactive_mode not in ["True", "False"]:
-            raise ValueError(f"Invalid value for INTERACTIVE_MODE: {interactive_mode}")
+            raise ValueError(
+                f"Invalid value for INTERACTIVE_MODE: {interactive_mode}")
         self.INTERACTIVE_MODE = True if interactive_mode == "True" else False
 
     def set_seed(self, seed):

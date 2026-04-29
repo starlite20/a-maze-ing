@@ -1,6 +1,7 @@
 from mazegen import MazeGenerator, Direction
 from enum import Enum
 
+
 class Color(Enum):
     RED = '\033[91m'
     GREEN = '\033[92m'
@@ -49,13 +50,6 @@ def show_ascii_maze(maze: MazeGenerator, color_mode: int, show_path, solution) -
         return color + content + Color.RESET.value
 
     def cell_content(row: int, column: int) -> str:
-        # check path and fill path with colored block
-        if (row, column) in path_coords:
-            content = ".. "
-            if color_mode == 1:
-                return colored(content, Color.GREY.value)
-            return colored(content, Color.CYAN.value + Color.BOLD.value)
-
         # check if entry
         if (row, column) == maze.entry:
             content = "[] "
@@ -69,6 +63,13 @@ def show_ascii_maze(maze: MazeGenerator, color_mode: int, show_path, solution) -
             if color_mode == 1:
                 return colored(content, Color.GREY.value)
             return colored(content, Color.RED.value + Color.BOLD.value)
+
+        # check path and fill path with colored block
+        if (row, column) in path_coords:
+            content = ".. "
+            if color_mode == 1:
+                return colored(content, Color.GREY.value)
+            return colored(content, Color.CYAN.value + Color.BOLD.value)
 
         return "   "
 
