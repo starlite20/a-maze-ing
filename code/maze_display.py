@@ -66,7 +66,7 @@ def show_ascii_maze(maze, color_mode: int, show_path: bool, solution: str):
 
         if (row, col) in path_coords:
             return paint("███", path_color + Color.BOLD.value)
-        
+
         if maze.grid[row][col].pattern:
             return paint("███", pattern_color + Color.BOLD.value)
 
@@ -103,17 +103,16 @@ def show_ascii_maze(maze, color_mode: int, show_path: bool, solution: str):
                     line += paint(WALL, path_color + Color.BOLD.value)
                 else:
                     line += SPACE
-            
+
             line += render_cell(row, col)
 
         # then we check east/right wall check for the end of the row
         if has_wall(row, maze.width - 1, Direction.EAST):
             line += wall_color + WALL
         else:
-            line += SPACE 
+            line += SPACE
 
         print(line + Color.RESET.value)
-        
 
     # bottom line
     line = wall_color + WALL
@@ -128,5 +127,3 @@ def show_ascii_maze(maze, color_mode: int, show_path: bool, solution: str):
                 line += SPACE * 3
         line += wall_color + WALL
     print(line + Color.RESET.value)
-
-
