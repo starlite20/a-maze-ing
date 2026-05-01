@@ -98,7 +98,7 @@ class Configuration():
             raise ValueError(f"Invalid value for seed: {seed}")
 
     def set_algorithm(self, algorithm):
-        if algorithm not in ["", "DFS"]:
+        if algorithm not in ["", "DFS", "ELLER"]:
             raise ValueError(
                 f"Specified algorithm '{algorithm}' not supported."
             )

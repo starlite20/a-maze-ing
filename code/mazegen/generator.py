@@ -163,8 +163,9 @@ class MazeGenerator:
             self.embed_42_pattern()
 
         if algorithm == "DFS":
-            self._generate_maze_eller()#I add my algo here to test it 
-            # self._generate_maze_DFS()
+            self._generate_maze_DFS()
+        elif algorithm == "ELLER":
+            self._generate_maze_eller()
         else:
             pass
 
@@ -226,6 +227,71 @@ class MazeGenerator:
 
         # if no internal East or South walls were found, it's a 3x3 open area
         return True
+
+    # Eller's part
+    def _generate_maze_eller(self) -> None:
+        random.seed(self.seed)
+        row_sets = list(range(self.width))
+        next_set_id = self.width
+
+        for y in range(self.height):
+            is_last_row = (y == self.height - 1)
+
+            # Horiztional
+            for x in range(self.width - 1):
+                current_cell = self.grid[y][x]
+                next_cell = self.grid[y][x + 1]
+
+                # marge condtions for diff set: random or last row
+                # avoid pattern cells
+                if row_sets[x] != row_sets[x+1]:
+                    if is_last_row or random.choice([True, False]):
+                        if not (current_cell.pattern or next_cell.pattern):
+                            self._remove_walls(current_cell, next_cell)
+
+                            # join the old set team
+                            old_set = row_sets[x+1]
+                            new_set = row_sets[x]
+                            for i in range(self.width):
+                                if row_sets[i] == old_set:
+                                    row_sets[i] = new_set
+
+            # vertical merging
+            if not is_last_row:
+                next_row_sets = [None] * self.width
+
+                # coolect the cells according to there group
+                sets_in_row = {}
+                for x in range(self.width):
+                    s = row_sets[x]
+                    if s not in sets_in_row:
+                        sets_in_row[s] = []
+                    sets_in_row[s].append(x)
+
+                for s, indices in sets_in_row.items():
+                    random.shuffle(indices)
+                    num_verticals = random.randint(1, len(indices))
+
+                    for i in range(num_verticals):
+                        x = indices[i]
+                        current_cell = self.grid[y][x]
+                        south_cell = self.grid[y+1][x]
+
+                        if not (current_cell.pattern or south_cell.pattern):
+                            self._remove_walls(current_cell, south_cell)
+                            next_row_sets[x] = s
+
+                # next row prep
+                for x in range(self.width):
+                    if next_row_sets[x] is None:
+                        next_row_sets[x] = next_set_id
+                        next_set_id += 1
+                row_sets = next_row_sets
+
+        # solver : visited
+        for row in self.grid:
+            for cell in row:
+                cell.visited = True
 
     def _generate_imperfections(self) -> None:
         # consider only n-1 rows and columns. ignoring the last.
@@ -382,69 +448,3 @@ class MazeGenerator:
             if 0 <= y < self.height and 0 <= x < self.width:
                 self.grid[y][x].visited = True
                 self.grid[y][x].pattern = True
-
-#Eller's part
-    def _generate_maze_eller(self) -> None:
-        random.seed(self.seed)
-        row_sets = list(range(self.width))
-        next_set_id = self.width
-
-        for y in range(self.height):
-            is_last_row = (y == self.height - 1)
-
-            #Horiztional
-            for x in range(self.width - 1):
-                current_cell = self.grid[y][x]
-                next_cell = self.grid[y][x + 1]
-
-                # marge condtions for diff set: random or last row 
-                # avoid pattern cells
-                if row_sets[x] != row_sets[x+1]:
-                    if is_last_row or random.choice([True, False]):
-                        if not (current_cell.pattern or next_cell.pattern):
-                            self._remove_walls(current_cell, next_cell)
-                            
-                            # join the old set team 
-                            old_set = row_sets[x+1]
-                            new_set = row_sets[x]
-                            for i in range(self.width):
-                                if row_sets[i] == old_set:
-                                    row_sets[i] = new_set
-
-            #vertical merging
-            if not is_last_row:
-                next_row_sets = [None] * self.width
-                
-                # coolect the cells according to there group
-                sets_in_row = {}
-                for x in range(self.width):
-                    s = row_sets[x]
-                    if s not in sets_in_row:
-                        sets_in_row[s] = []
-                    sets_in_row[s].append(x)
-
-                for s, indices in sets_in_row.items():
-                    random.shuffle(indices)
-                    num_verticals = random.randint(1, len(indices))
-                    
-                    for i in range(num_verticals):
-                        x = indices[i]
-                        current_cell = self.grid[y][x]
-                        south_cell = self.grid[y+1][x]
-                        
-                        if not (current_cell.pattern or south_cell.pattern):
-                            self._remove_walls(current_cell, south_cell)
-                            next_row_sets[x] = s
-
-                # next row prep
-                for x in range(self.width):
-                    if next_row_sets[x] is None:
-                        next_row_sets[x] = next_set_id
-                        next_set_id += 1
-                row_sets = next_row_sets
-
-        # solver : visited
-        for row in self.grid:
-            for cell in row:
-                cell.visited = True
-      
