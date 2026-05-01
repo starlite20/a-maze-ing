@@ -3,10 +3,11 @@ from enum import Enum
 
 
 class Color(Enum):
+    CYAN = '\033[96m'
     RED = '\033[91m'
     GREEN = '\033[92m'
     PURPLE = '\033[95m'
-    CYAN = '\033[96m'
+    YELLOW = '\033[33m'
     GREY = '\033[90m'
     RESET = '\033[0m'
     BOLD = '\033[1m'
@@ -22,86 +23,110 @@ def display_maze(
         pass
 
 
-def show_ascii_maze(maze: MazeGenerator, color_mode: int, show_path, solution) -> None:
-    if color_mode == 1:
-        WALL_COLOR = Color.GREY.value
-    else:
-        WALL_COLOR = Color.CYAN.value
+def show_ascii_maze(maze, color_mode: int, show_path: bool, solution: str):
 
     WALL = "█"
     SPACE = " "
 
+    colors = list(Color)
+    len_colors = len(colors) - 2
+    wall_color = colors[color_mode % len_colors].value
+    path_color = colors[(color_mode + 1) % len_colors].value
+    entry_color = colors[(color_mode + 2) % len_colors].value
+    exit_color = colors[(color_mode + 3) % len_colors].value
+    pattern_color = colors[(color_mode + 5) % len_colors].value
+
+    def paint(text: str, color: str) -> str:
+        return f"{color}{text}{Color.RESET.value}"
+
+    # path tracing
     path_coords = set()
     if show_path and solution:
-        curr_x, curr_y = maze.entry
-        path_coords.add((curr_y, curr_x))
-        for char in solution:
-            if char == 'N':
-                curr_y -= 1
-            elif char == 'S':
-                curr_y += 1
-            elif char == 'E':
-                curr_x += 1
-            elif char == 'W':
-                curr_x -= 1
-            path_coords.add((curr_y, curr_x))
+        x, y = maze.entry
+        path_coords.add((y, x))
 
-    def colored(content: str, color: str) -> str:
-        return color + content + Color.RESET.value
+        for move in solution:
+            if move == 'N':
+                y -= 1
+            elif move == 'S':
+                y += 1
+            elif move == 'E':
+                x += 1
+            elif move == 'W':
+                x -= 1
+            path_coords.add((y, x))
 
-    def cell_content(row: int, column: int) -> str:
-        # check if entry
-        if (row, column) == maze.entry:
-            content = "[] "
-            if color_mode == 1:
-                return colored(content, Color.GREY.value)
-            return colored(content, Color.PURPLE.value + Color.BOLD.value)
+    # cell rendering
+    def render_cell(row, col):
+        if (row, col) == maze.entry:
+            return paint("███", entry_color + Color.BOLD.value)
 
-        # check if exit
-        if (row, column) == maze.exit:
-            content = "[] "
-            if color_mode == 1:
-                return colored(content, Color.GREY.value)
-            return colored(content, Color.RED.value + Color.BOLD.value)
+        if (row, col) == maze.exit:
+            return paint("███", exit_color + Color.BOLD.value)
 
-        # check path and fill path with colored block
-        if (row, column) in path_coords:
-            content = ".. "
-            if color_mode == 1:
-                return colored(content, Color.GREY.value)
-            return colored(content, Color.CYAN.value + Color.BOLD.value)
+        if (row, col) in path_coords:
+            return paint("███", path_color + Color.BOLD.value)
+        
+        if maze.grid[row][col].pattern:
+            return paint("███", pattern_color + Color.BOLD.value)
 
         return "   "
 
+    def has_wall(r, c, direction):
+        return maze.grid[r][c].walls & direction
+
+    # drawing the maze
     for row in range(maze.height):
-        top_line = WALL_COLOR + WALL
-        for column in range(maze.width):
-            if maze.grid[row][column].walls & Direction.NORTH:
-                top_line += WALL * 3
+
+        # top line
+        line = wall_color + WALL
+        for col in range(maze.width):
+            if has_wall(row, col, Direction.NORTH):
+                line += WALL * 3
             else:
-                top_line += SPACE * 3
-            top_line += WALL
-        print(top_line + Color.RESET.value)
+                # check if this passage is part of the solution path
+                if (row, col) in path_coords and (row - 1, col) in path_coords:
+                    line += paint("███", path_color + Color.BOLD.value)
+                else:
+                    line += SPACE * 3
+            line += wall_color + WALL
+        print(line + Color.RESET.value)
 
-        mid_line = WALL_COLOR
-        for column in range(maze.width):
-            if maze.grid[row][column].walls & Direction.WEST:
-                mid_line += WALL
+        # middle line
+        line = wall_color
+        for col in range(maze.width):
+            if has_wall(row, col, Direction.WEST):
+                line += wall_color + WALL
             else:
-                mid_line += SPACE
-            mid_line += cell_content(row, column)
+                # check if the path moves west/left through this gap
+                if (row, col) in path_coords and (row, col - 1) in path_coords:
+                    line += paint(WALL, path_color + Color.BOLD.value)
+                else:
+                    line += SPACE
+            
+            line += render_cell(row, col)
 
-        if maze.grid[row][maze.width - 1].walls & Direction.EAST:
-            mid_line += WALL
+        # then we check east/right wall check for the end of the row
+        if has_wall(row, maze.width - 1, Direction.EAST):
+            line += wall_color + WALL
         else:
-            mid_line += SPACE
-        print(mid_line + Color.RESET.value)
+            line += SPACE 
 
-    bottom_line = WALL_COLOR + WALL
-    for column in range(maze.width):
-        if maze.grid[maze.height - 1][column].walls & Direction.SOUTH:
-            bottom_line += WALL * 3
+        print(line + Color.RESET.value)
+        
+
+    # bottom line
+    line = wall_color + WALL
+    for col in range(maze.width):
+        if has_wall(maze.height - 1, col, Direction.SOUTH):
+            line += WALL * 3
         else:
-            bottom_line += SPACE * 3
-        bottom_line += WALL
-    print(bottom_line + Color.RESET.value)
+            # check if the path through the bottom
+            if (maze.height - 1, col) in path_coords and (maze.height, col) in path_coords:
+                line += paint("███", path_color + Color.BOLD.value)
+            else:
+                line += SPACE * 3
+        line += wall_color + WALL
+    print(line + Color.RESET.value)
+
+
