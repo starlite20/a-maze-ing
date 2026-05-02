@@ -10,9 +10,6 @@ PERFECT=False
 #optional parameters
 #===========================
 
-#get all features and runs 
-#INTERACTIVE_MODE=True
-
 #seed for randomness
 # SEED=5
 

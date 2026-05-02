@@ -1,6 +1,8 @@
 import sys
 import os
-from mazegen import MazeGenerator
+import json
+import time
+from mazegen import MazeGenerator, Cell, Direction
 from config_handler import Configuration, read_config, validate_and_cast_config
 from maze_display import display_maze, Color
 
@@ -38,8 +40,9 @@ def generate_and_solve(config: Configuration) -> tuple[MazeGenerator, str]:
     return (maze, maze.solve_maze())
 
 
-def run_regular_mode(config: Configuration) -> None:
+def run_amazing(config: Configuration) -> None:
     maze, solution = generate_and_solve(config)
+    generated_once = True
 
     show_path = False
     color_mode = 0
@@ -48,7 +51,7 @@ def run_regular_mode(config: Configuration) -> None:
         clear_screen()
         display_maze(maze, color_mode, show_path, solution)
         print(
-            "\n1. Regenerate\n2. Show/Hide Path\n3. Rotate Colors\n4. Write Output & Quit\n")
+            "\n1. Regenerate\n2. Show/Hide Path\n3. Rotate Colors\n4. Write Output & Quit\n5. Animate Maze Generation\n")
 
         choice = input("Choice? ").strip()
         if choice == '1':
@@ -60,44 +63,22 @@ def run_regular_mode(config: Configuration) -> None:
             color_mode = (color_mode + 1) % len(Color)
         elif choice == '4':
             write_output_file(maze, config, solution)
+            
+            try:
+                os.remove("history.json")
+            except FileNotFoundError:
+                pass
+            
             sys.exit(0)
-        else:
-            print("Incorrect Option Selected.")
+        elif choice == '5':
+            if not generated_once:
+                print("Please generate a maze first (Option 1).")
+                input("Press Enter to continue...")
+                continue
 
-
-def run_interactive_mode(config: Configuration) -> None:
-    maze = None
-    solution = None
-    show_path = False
-    color_mode = 0
-    generated_once = False
-
-    while True:
-        clear_screen()
-        print(
-            f"Size: {config.WIDTH}x{config.HEIGHT} | Seed: {config.SEED} | Perfect: {config.PERFECT}")
-
-        if generated_once:
-            display_maze(maze, color_mode, show_path, solution)
-        else:
-            print("\nNo maze generated yet.")
-
-        print("\n1. Generate\n2. Path\n3. Colors\n4. Settings\n5. Write & Quit")
-        choice = input("Choice? ").strip()
-
-        if choice == '1':
-            maze, solution = generate_and_solve(config)
-            generated_once = True
+            maze.export_history("history.json")
+            play_animation(maze, "history.json")
             show_path = False
-        elif choice == '2' and generated_once:
-            show_path = not show_path
-        elif choice == '3':
-            color_mode = (color_mode + 1) % len(list(Color))
-        elif choice == '4':
-            open_settings_menu(config)
-        elif choice == '5' and generated_once:
-            write_output_file(maze, config, solution)
-            sys.exit(0)
         else:
             print("Incorrect Option Selected.")
 
@@ -139,6 +120,61 @@ def open_settings_menu(config: Configuration):
                 input("Press Enter...")
 
 
+def play_animation(maze: MazeGenerator, history_file: str) -> None:
+    frames_per_second = 0.05
+
+    with open(history_file, 'r') as f:
+        script = json.load(f)
+
+    # creating a preview grid matching the maze dimensions and configuration
+    preview_grid = [[Cell(x, y, walls=15, visited=False)
+                   for x in range(maze.width)]
+                  for y in range(maze.height)]
+
+    # copying 42 pattern state
+    if maze.embed_pattern:
+        for r in range(maze.height):
+            for c in range(maze.width):
+                preview_grid[r][c].pattern = maze.grid[r][c].pattern
+
+    active_cell = None
+
+    for frame in script:
+        action = frame["action"]
+
+        if action == "visit":
+            x, y = frame["cell"]
+            preview_grid[y][x].visited = True
+            active_cell = preview_grid[y][x]
+
+        elif action == "carve":
+            fx, fy = frame["from_"]
+            tx, ty = frame["to"]
+            curr = preview_grid[fy][fx]
+            nxt = preview_grid[ty][tx]
+
+            nxt.visited = True
+            maze._remove_walls(curr, nxt)
+            active_cell = nxt
+
+        elif action == "backtrack":
+            tx, ty = frame["to"]
+            active_cell = preview_grid[ty][tx]
+
+        # rendering the frame
+        clear_screen()
+        real_grid = maze.grid
+        maze.grid = preview_grid
+
+        display_maze(maze, color_mode=0, show_path=False, solution="",
+                     current_cell=active_cell, head_cell=None)
+
+        maze.grid = real_grid
+
+        # frame rate
+        time.sleep(frames_per_second)
+
+
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python a_maze_ing.py <config_file>")
@@ -147,11 +183,7 @@ if __name__ == "__main__":
     maze_config = read_config(sys.argv[1])
     try:
         config = validate_and_cast_config(maze_config)
-
-        if config.INTERACTIVE_MODE:
-            run_interactive_mode(config)
-        else:
-            run_regular_mode(config)
+        run_amazing(config)
 
     except ValueError as e:
         print(f"Error: {e}")

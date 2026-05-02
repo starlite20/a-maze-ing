@@ -7,15 +7,11 @@ PERFECT=True
 
 #optional parameters
 #===========================
-
-#get all features and runs 
-#INTERACTIVE_MODE=True
-
 #seed for randomness
 # SEED=5
 
 # algorithm for maze creation
-ALGORITHM=ELLER
+ALGORITHM=DFS
 
 #embed 42 pattern
 PATTERN_42=True

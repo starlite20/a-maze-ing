@@ -86,7 +86,6 @@ PERFECT = <boolean  to state if the maze should be perfect or not>
 
 
 #optional parameters
-INTERACTIVE_MODE = <boolean to state if you want the interactive mode on>
 SEED = <randomness seed value>
 ALGORITHM = <algorithm to be used for the maze generation>
 PATTERN_42 = <boolean to state if you want 42 pattern within the maze>

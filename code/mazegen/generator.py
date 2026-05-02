@@ -1,7 +1,8 @@
 from enum import IntFlag
 from dataclasses import dataclass
 import random
-
+import json
+from typing import Callable
 
 class Direction(IntFlag):
     NORTH = 1
@@ -38,6 +39,7 @@ class MazeGenerator:
         self.set_seed(seed)
         self.set_pattern_42(pattern_42)
         self.grid: list[list[Cell]] = []
+        self.history: list[dict] = []
 
     # =============================
     # custom validators
@@ -176,6 +178,7 @@ class MazeGenerator:
     def _generate_maze_DFS(self) -> None:
         start_cell = self.grid[self.entry[1]][self.entry[0]]
         start_cell.visited = True
+        self._log_event("visit", cell=[start_cell.x, start_cell.y])
 
         random.seed(self.seed)
 
@@ -191,8 +194,12 @@ class MazeGenerator:
                 next_cell_to_go.visited = True
                 stack.append(next_cell_to_go)
 
+                self._log_event("carve", from_=[current.x, current.y], to=[next_cell_to_go.x, next_cell_to_go.y])
             else:
                 stack.pop()
+                active = stack[-1] if stack else None
+                if active:
+                    self._log_event("backtrack", to=[active.x, active.y])
 
     def _is_3x3_open(self, center_cell_col: int, center_cell_row: int) -> bool:
         # if the surrounding neighbour has the chance of crossing border, it means its not a 3x3 open space
@@ -249,6 +256,7 @@ class MazeGenerator:
                         # Avoid pattern cells to keep the "42" intact
                         if not (current_cell.pattern or next_cell.pattern):
                             self._remove_walls(current_cell, next_cell)
+                            self._log_event("carve", from_=[x, y], to=[x + 1, y])
 
                             # Unify the sets: all cells in the old set join the new set
                             old_set = row_sets[x+1]
@@ -287,6 +295,7 @@ class MazeGenerator:
                     first_x = valid_indices[0]
                     self._remove_walls(self.grid[y][first_x], self.grid[y+1][first_x])
                     next_row_sets[first_x] = s
+                    self._log_event("carve", from_=[first_x, y], to=[first_x, y + 1])
 
                     # 3b: The Random (50% chance for additional drops)
                     for i in range(1, len(valid_indices)):
@@ -294,6 +303,7 @@ class MazeGenerator:
                             rand_x = valid_indices[i]
                             self._remove_walls(self.grid[y][rand_x], self.grid[y+1][rand_x])
                             next_row_sets[rand_x] = s
+                            self._log_event("carve", from_=[rand_x, y], to=[rand_x, y + 1])
 
                 # --- STEP 3: Next Row Preparation ---
                 for x in range(self.width):
@@ -463,3 +473,20 @@ class MazeGenerator:
             if 0 <= y < self.height and 0 <= x < self.width:
                 self.grid[y][x].visited = True
                 self.grid[y][x].pattern = True
+
+
+    # =============================
+    # the logging concept
+
+    def _log_event(self, action: str, **kwargs) -> None:
+        """Record a single delta event."""
+        self.history.append({
+            "step": len(self.history),
+            "action": action,
+            **kwargs
+        })
+
+    def export_history(self, filepath: str = "history.json") -> None:
+        """Save the recorded events to a file."""
+        with open(filepath, 'w') as f:
+            json.dump(self.history, f, indent=2)

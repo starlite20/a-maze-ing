@@ -5,7 +5,7 @@ class Configuration():
     def __init__(
             self, width, height, entry, exit_pos,
             output_file, perfect, seed, algorithm,
-            pattern_42, interactive_mode) -> None:
+            pattern_42) -> None:
         self.set_width(width)
         self.set_height(height)
         self.set_entry(entry)
@@ -15,7 +15,6 @@ class Configuration():
         self.set_seed(seed)
         self.set_algorithm(algorithm)
         self.set_embed_pattern(pattern_42)
-        self.set_interactive_mode(interactive_mode)
 
     def __str__(self):
         return (
@@ -28,7 +27,6 @@ class Configuration():
             f"SEED={self.SEED}"
             f"ALGORITHM={self.ALGORITHM}"
             f"PATTERN_42={'True' if self.PATTERN_42 else 'False'}"
-            f"INTERACTIVE_MODE={'True' if self.INTERACTIVE_MODE else 'False'}"
         )
 
     def set_width(self, width):
@@ -79,12 +77,6 @@ class Configuration():
         if embed_pattern not in ["True", "False"]:
             raise ValueError(f"Invalid value for PATTERN_42: {embed_pattern}")
         self.PATTERN_42 = True if embed_pattern == "True" else False
-
-    def set_interactive_mode(self, interactive_mode):
-        if interactive_mode not in ["True", "False"]:
-            raise ValueError(
-                f"Invalid value for INTERACTIVE_MODE: {interactive_mode}")
-        self.INTERACTIVE_MODE = True if interactive_mode == "True" else False
 
     def set_seed(self, seed):
         try:
@@ -154,7 +146,6 @@ def validate_and_cast_config(config) -> Configuration:
         seed=config["SEED"] if "SEED" in config else "",
         algorithm=config["ALGORITHM"] if "ALGORITHM" in config else "",
         pattern_42=config["PATTERN_42"] if "PATTERN_42" in config else "False",
-        interactive_mode=config["INTERACTIVE_MODE"] if "INTERACTIVE_MODE" in config else "False"
     )
 
     return configuration

@@ -1,4 +1,4 @@
-from mazegen import MazeGenerator, Direction
+from mazegen import MazeGenerator, Direction, Cell
 from enum import Enum
 
 
@@ -15,13 +15,17 @@ class Color(Enum):
 
 def display_maze(
         maze: MazeGenerator, color_mode: int = 0,
-        show_path: bool = False, solution: str = ""
+        show_path: bool = False, solution: str = "",
+        current_cell: Cell | None = None,
+        head_cell: Cell | None = None
 ) -> None:
-    show_ascii_maze(maze, color_mode, show_path, solution)
+    show_ascii_maze(maze, color_mode, show_path, solution, current_cell, head_cell)
 
 
-def show_ascii_maze(maze, color_mode: int, show_path: bool, solution: str):
-
+def show_ascii_maze(
+        maze: MazeGenerator, color_mode: int, show_path: bool, solution: str,
+        current_cell: Cell | None, head_cell: Cell | None
+) -> None:
     WALL = "█"
     SPACE = " "
 
@@ -41,30 +45,34 @@ def show_ascii_maze(maze, color_mode: int, show_path: bool, solution: str):
     if show_path and solution:
         x, y = maze.entry
         path_coords.add((y, x))
-
         for move in solution:
-            if move == 'N':
-                y -= 1
-            elif move == 'S':
-                y += 1
-            elif move == 'E':
-                x += 1
-            elif move == 'W':
-                x -= 1
+            if move == 'N': y -= 1
+            elif move == 'S': y += 1
+            elif move == 'E': x += 1
+            elif move == 'W': x -= 1
             path_coords.add((y, x))
 
     # cell rendering
-    def render_cell(row, col):
+    def render_cell(row: int, col: int) -> str:
+        cell = maze.grid[row][col]
+
+        # as we are animating the cells for generation
+        # we fill all unvisited cells with grey
+        if not cell.visited and not cell.pattern:
+            return paint("███", Color.GREY.value)
+        
+        # current cell active will be marked with yellow
+        if current_cell is not None and cell is current_cell:
+            return paint("███", Color.YELLOW.value + Color.BOLD.value)
+        
+        # fixed cells such as start & end point, path way, pattern
         if (row, col) == maze.entry:
             return paint("███", entry_color + Color.BOLD.value)
-
         if (row, col) == maze.exit:
             return paint("███", exit_color + Color.BOLD.value)
-
         if (row, col) in path_coords:
             return paint("███", path_color + Color.BOLD.value)
-
-        if maze.grid[row][col].pattern:
+        if cell.pattern:
             return paint("███", pattern_color + Color.BOLD.value)
 
         return "   "
