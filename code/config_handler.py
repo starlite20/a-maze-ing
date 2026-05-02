@@ -1,6 +1,3 @@
-import sys
-
-
 class Configuration():
     def __init__(
             self, width: str, height: str, entry: str, exit_pos: str,
@@ -54,7 +51,12 @@ class Configuration():
         try:
             coord_x = int(coord_str.split(",")[0].strip())
             coord_y = int(coord_str.split(",")[1].strip())
-            if coord_x < 0 or coord_y < 0 or coord_x >= width or coord_y >= height:
+            if (
+                coord_x < 0
+                or coord_y < 0
+                or coord_x >= width
+                or coord_y >= height
+            ):
                 raise ValueError(
                     f"Coordinates for {field_name} must be "
                     f"within maze dimensions (0 <= x < {width},"
@@ -63,7 +65,9 @@ class Configuration():
             return (coord_x, coord_y)
         except (ValueError, TypeError):
             raise ValueError(
-                f"Invalid coordinate format used for {field_name}: {coord_str}")
+                f"Invalid coordinate format used for {field_name}:"
+                f" {coord_str}"
+            )
 
     def set_perfect(self, perfect: str) -> None:
         if perfect not in ["True", "False"]:

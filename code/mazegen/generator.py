@@ -4,6 +4,7 @@ import random
 import json
 from collections import deque
 
+
 class Direction(IntFlag):
     NORTH = 1
     EAST = 2
@@ -53,7 +54,9 @@ class MazeGenerator:
             raise ValueError(f"Height must be an integer >= 2. Got: {height}")
         self.height = height
 
-    def _is_valid_coord(self, coord: tuple[int, int], name: str) -> None:
+    def _is_valid_coord(self,
+                        coord: tuple[int, int],
+                        name: str) -> None:
         if not (isinstance(coord, tuple) and len(coord) == 2 and
                 all(isinstance(i, int) for i in coord)):
             raise ValueError(
@@ -63,7 +66,10 @@ class MazeGenerator:
             raise ValueError(
                 f"{name} coordinates out of bounds. Got: {coord}")
 
-    def set_entry_exit_pos(self, entry_pos: tuple[int, int], exit_pos: tuple[int, int]) -> None:
+    def set_entry_exit_pos(self,
+                           entry_pos: tuple[int, int],
+                           exit_pos: tuple[int, int]
+                           ) -> None:
         self._is_valid_coord(entry_pos, "Entry")
         self._is_valid_coord(exit_pos, "Exit")
 
@@ -116,19 +122,27 @@ class MazeGenerator:
         neighbours = []
 
         # North (x, y-1)
-        if y > 0 and not self.grid[y-1][x].visited and not self.grid[y-1][x].pattern:
+        if (y > 0
+            and not self.grid[y-1][x].visited
+                and not self.grid[y-1][x].pattern):
             neighbours.append(self.grid[y-1][x])
 
         # East (x+1, y)
-        if x < self.width - 1 and not self.grid[y][x+1].visited and not self.grid[y][x+1].pattern:
+        if (x < self.width - 1
+            and not self.grid[y][x+1].visited
+                and not self.grid[y][x+1].pattern):
             neighbours.append(self.grid[y][x+1])
 
         # South (x, y+1)
-        if y < self.height - 1 and not self.grid[y+1][x].visited and not self.grid[y+1][x].pattern:
+        if (y < self.height - 1
+            and not self.grid[y+1][x].visited
+                and not self.grid[y+1][x].pattern):
             neighbours.append(self.grid[y+1][x])
 
         # West (x-1, y)
-        if x > 0 and not self.grid[y][x-1].visited and not self.grid[y][x-1].pattern:
+        if (x > 0
+            and not self.grid[y][x-1].visited
+                and not self.grid[y][x-1].pattern):
             neighbours.append(self.grid[y][x-1])
 
         return neighbours
@@ -194,7 +208,8 @@ class MazeGenerator:
                 next_cell_to_go.visited = True
                 stack.append(next_cell_to_go)
 
-                self._log_event("carve", from_=[current.x, current.y], to=[next_cell_to_go.x, next_cell_to_go.y])
+                self._log_event("carve", from_=[current.x, current.y], to=[
+                                next_cell_to_go.x, next_cell_to_go.y])
             else:
                 stack.pop()
                 active = stack[-1] if stack else None
@@ -208,35 +223,43 @@ class MazeGenerator:
         max_y = row + 1
         for current_row in range(min_y, max_y + 1):
             for current_col in range(min_x, max_x + 1):
-                if current_col < 0 or current_row < 0 or current_col + 2 >= self.width or current_row + 2 >= self.height:
+                if (current_col < 0
+                    or current_row < 0
+                    or current_col + 2 >= self.width
+                        or current_row + 2 >= self.height):
                     continue
-                
+
                 is_open = True
-                
+
                 for row_in_grid in range(3):
                     for column_in_grid in range(3):
-                        cell = self.grid[current_row + row_in_grid][current_col + column_in_grid]
-                        
+                        cell = (self.grid[current_row +
+                                          row_in_grid][current_col
+                                                       + column_in_grid])
+
                         # verfying if there is a wall on the right-side
-                        if column_in_grid < 2 and (cell.walls & Direction.EAST):
+                        if (column_in_grid < 2
+                                and (cell.walls & Direction.EAST)):
                             is_open = False
                             break
-                        
+
                         # verfying if there is a wall on the bottom-side
-                        if row_in_grid < 2 and (cell.walls & Direction.SOUTH):
+                        if (row_in_grid < 2
+                                and (cell.walls & Direction.SOUTH)):
                             is_open = False
                             break
-                        
+
                     if not is_open:
                         break
-                
-                # if is_open is still flagged true, it means this is a 3x3 corridor.
+
+                # if is_open is still flagged true
+                # it means this is a 3x3 corridor.
                 if is_open:
                     return True
         return False
 
-
     # Eller's part
+
     def _generate_maze_eller(self) -> None:
         random.seed(self.seed)
         # row_sets tracks which set each cell belongs to in the current row
@@ -257,9 +280,11 @@ class MazeGenerator:
                         # Avoid pattern cells to keep the "42" intact
                         if not (current_cell.pattern or next_cell.pattern):
                             self._remove_walls(current_cell, next_cell)
-                            self._log_event("carve", from_=[x, y], to=[x + 1, y])
+                            self._log_event(
+                                "carve", from_=[x, y], to=[x + 1, y])
 
-                            # Unify the sets: all cells in the old set join the new set
+                            # unify the sets
+                            # all cells in the old set join the new set
                             old_set = row_sets[x+1]
                             new_set = row_sets[x]
                             for i in range(self.width):
@@ -279,10 +304,11 @@ class MazeGenerator:
                     sets_in_row[s].append(x)
 
                 for s, indices in sets_in_row.items():
-                    # STEP 1: Filter valid cells (No pattern in current or south cell)
+                    # filter valid cells (No pattern in current or south)
                     valid_indices = [
-                        x for x in indices 
-                        if not (self.grid[y][x].pattern or self.grid[y+1][x].pattern)
+                        x for x in indices
+                        if (not (self.grid[y][x].pattern
+                                 or self.grid[y+1][x].pattern))
                     ]
 
                     # STEP 2: If empty, this set is pattern-blocked; skip it
@@ -291,25 +317,30 @@ class MazeGenerator:
 
                     # STEP 3: Guarantee at least one drop, then random the rest
                     random.shuffle(valid_indices)
-                    
+
                     # 3a: The Guarantee (First cell always drops)
                     first_x = valid_indices[0]
-                    self._remove_walls(self.grid[y][first_x], self.grid[y+1][first_x])
+                    self._remove_walls(
+                        self.grid[y][first_x], self.grid[y+1][first_x])
                     next_row_sets[first_x] = s
-                    self._log_event("carve", from_=[first_x, y], to=[first_x, y + 1])
+                    self._log_event(
+                        "carve", from_=[first_x, y], to=[first_x, y + 1])
 
                     # 3b: The Random (50% chance for additional drops)
                     for i in range(1, len(valid_indices)):
                         if random.choice([True, False]):
                             rand_x = valid_indices[i]
-                            self._remove_walls(self.grid[y][rand_x], self.grid[y+1][rand_x])
+                            self._remove_walls(
+                                self.grid[y][rand_x], self.grid[y+1][rand_x])
                             next_row_sets[rand_x] = s
-                            self._log_event("carve", from_=[rand_x, y], to=[rand_x, y + 1])
+                            self._log_event(
+                                "carve", from_=[rand_x, y], to=[rand_x, y + 1])
 
                 # --- STEP 3: Next Row Preparation ---
                 for x in range(self.width):
                     if next_row_sets[x] is None:
-                        # Cell didn't get a vertical drop; assign a brand new Set ID
+                        # cell didn't get a vertical drop
+                        # assign a brand new Set ID
                         next_row_sets[x] = next_set_id
                         next_set_id += 1
                 row_sets = next_row_sets
@@ -333,14 +364,17 @@ class MazeGenerator:
             random_cell_x = random.randint(0, self.width - 1)
             random_cell_y = random.randint(0, self.height - 1)
 
-            # as we are ignoring the last row and column, we will focus on eliminating walls on the right and down only.
+            # ignoring the last row and column, as we will focus
+            # on eliminating walls on the right and down only.
             # creating a safe approach.
             neighbor_x = random_cell_x
             neighbor_y = random_cell_y
             direction = random.choice([Direction.EAST, Direction.SOUTH])
-            if direction == Direction.EAST and random_cell_x < self.width - 1:
+            if (direction == Direction.EAST
+                    and random_cell_x < self.width - 1):
                 neighbor_x += 1
-            elif direction == Direction.SOUTH and random_cell_y < self.height - 1:
+            elif (direction == Direction.SOUTH
+                  and random_cell_y < self.height - 1):
                 neighbor_y += 1
             else:
                 continue
@@ -357,8 +391,9 @@ class MazeGenerator:
                 continue
 
             # LARGE CORRIDOR CHECK
-            # We check the 3x3 box centered on the CURRENT cell, AND the NEIGHBOR cell.
-            if self._is_3x3_open(random_cell_x, random_cell_y) or self._is_3x3_open(neighbor_x, neighbor_y):
+            # check 3x3 box centered on the CURRENT & NEIGHBOR
+            if (self._is_3x3_open(random_cell_x, random_cell_y)
+                    or self._is_3x3_open(neighbor_x, neighbor_y)):
                 continue
                 # skip this iteration as this is a large corridor.
 
@@ -450,7 +485,8 @@ class MazeGenerator:
         pattern_height = len(pattern_map)
 
         if self.width < pattern_width or self.height < pattern_height:
-            print("Warning: Maze too small to embed '42' pattern. Omitting pattern.")
+            print("Warning: Maze too small to embed "
+                  "'42' pattern. Omitting pattern.")
             self.embed_pattern = False
             return
 
@@ -463,7 +499,9 @@ class MazeGenerator:
             for x_offset, point in enumerate(row):
                 if point == "1":
                     blocked_coords.append(
-                        (pattern_start_x + x_offset, pattern_start_y + y_offset))
+                        (pattern_start_x + x_offset,
+                         pattern_start_y + y_offset)
+                    )
 
         if self.entry in blocked_coords:
             raise ValueError(
@@ -476,7 +514,6 @@ class MazeGenerator:
             if 0 <= y < self.height and 0 <= x < self.width:
                 self.grid[y][x].visited = True
                 self.grid[y][x].pattern = True
-
 
     # =============================
     # the logging concept

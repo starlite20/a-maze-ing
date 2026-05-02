@@ -45,10 +45,14 @@ def show_ascii_maze(
         x, y = maze.entry
         path_coords.add((y, x))
         for move in solution:
-            if move == 'N': y -= 1
-            elif move == 'S': y += 1
-            elif move == 'E': x += 1
-            elif move == 'W': x -= 1
+            if move == 'N':
+                y -= 1
+            elif move == 'S':
+                y += 1
+            elif move == 'E':
+                x += 1
+            elif move == 'W':
+                x -= 1
             path_coords.add((y, x))
 
     # cell rendering
@@ -59,11 +63,11 @@ def show_ascii_maze(
         # we fill all unvisited cells with grey
         if not cell.visited and not cell.pattern:
             return paint("███", Color.GREY.value)
-        
+
         # current cell active will be marked with yellow
         if current_cell is not None and cell is current_cell:
             return paint("███", Color.YELLOW.value + Color.BOLD.value)
-        
+
         # fixed cells such as start & end point, path way, pattern
         if (row, col) == maze.entry:
             return paint("███", entry_color + Color.BOLD.value)
@@ -125,7 +129,8 @@ def show_ascii_maze(
             line += WALL * 3
         else:
             # check if the path through the bottom
-            if (maze.height - 1, col) in path_coords and (maze.height, col) in path_coords:
+            if ((maze.height - 1, col) in path_coords
+                    and (maze.height, col) in path_coords):
                 line += paint("███", path_color + Color.BOLD.value)
             else:
                 line += SPACE * 3

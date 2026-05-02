@@ -11,7 +11,9 @@ def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
 
 
-def write_output_file(maze: MazeGenerator, config: Configuration, solution: str) -> None:
+def write_output_file(maze: MazeGenerator,
+                      config: Configuration,
+                      solution: str) -> None:
     maze_txt = ""
     for row in maze.grid:
         for cell in row:
@@ -50,7 +52,9 @@ def run_amazing(config: Configuration) -> None:
         clear_screen()
         display_maze(maze, color_mode, show_path, solution)
         print(
-            "\n1. Regenerate\n2. Show/Hide Path\n3. Rotate Colors\n4. Write Output & Quit\n5. Animate Maze Generation\n")
+            "\n1. Regenerate\n2. Show/Hide Path\n3. Rotate Colors\n"
+            "4. Write Output & Quit\n5. Animate Maze Generation\n"
+            )
 
         choice = input("Choice? ").strip()
         if choice == '1':
