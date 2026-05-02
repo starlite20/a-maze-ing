@@ -18,7 +18,7 @@ PERFECT=False
 ALGORITHM=ELLER
 
 # display mode (ASCII / MLX)
-DISPLAY_MODE=ASCII
+DISPLAY_MODE=MLX
 
 #embed 42 pattern
 PATTERN_42=True

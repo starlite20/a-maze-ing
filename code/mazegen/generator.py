@@ -83,7 +83,7 @@ class MazeGenerator:
             raise ValueError(
                 f"Seed must be an integer or None. Got: {type(seed)}"
             )
-        self.seed = seed if seed > 0 else random.randint(0, 2**32 - 1)
+        self.seed = seed if seed > 0 else None
 
     def set_pattern_42(self, embed_pattern: bool = False) -> None:
         if not isinstance(embed_pattern, bool):

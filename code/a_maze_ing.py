@@ -46,7 +46,7 @@ def run_regular_mode(config: Configuration) -> None:
 
     while True:
         clear_screen()
-        display_maze(maze, config.DISPLAY_MODE,
+        display_maze(maze, config.DISPLAY_MODE, config, 
                      color_mode, show_path, solution)
         print(
             "\n1. Regenerate\n2. Show/Hide Path\n3. Rotate Colors\n4. Write Output & Quit\n")
@@ -79,7 +79,7 @@ def run_interactive_mode(config: Configuration) -> None:
             f"Size: {config.WIDTH}x{config.HEIGHT} | Seed: {config.SEED} | Perfect: {config.PERFECT}")
 
         if generated_once:
-            display_maze(maze, config.DISPLAY_MODE,
+            display_maze(maze, config.DISPLAY_MODE, config,
                          color_mode, show_path, solution)
         else:
             print("\nNo maze generated yet.")
