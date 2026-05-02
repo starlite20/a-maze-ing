@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import random
 import json
 from collections import deque
+from typing import Any
 
 
 class Direction(IntFlag):
@@ -31,7 +32,7 @@ class MazeGenerator:
     def __init__(
         self, width: int, height: int,
         entry_pos: tuple[int, int], exit_pos: tuple[int, int],
-        perfect: bool, seed: int, pattern_42: bool = False
+        perfect: bool, seed: int | None, pattern_42: bool = False
     ) -> None:
         self.set_width(width)
         self.set_height(height)
@@ -40,7 +41,7 @@ class MazeGenerator:
         self.set_seed(seed)
         self.set_pattern_42(pattern_42)
         self.grid: list[list[Cell]] = []
-        self.history: list[dict] = []
+        self.history: list[dict[str, Any]] = []
 
     # =============================
     # custom validators
@@ -118,7 +119,7 @@ class MazeGenerator:
         for row in self.grid:
             print("".join([f"{cell.walls:X}" for cell in row]))
 
-    def get_unvisited_neighbours(self, x, y) -> list[Cell]:
+    def get_unvisited_neighbours(self, x: int, y: int) -> list[Cell]:
         neighbours = []
 
         # North (x, y-1)
@@ -263,7 +264,7 @@ class MazeGenerator:
     def _generate_maze_eller(self) -> None:
         random.seed(self.seed)
         # row_sets tracks which set each cell belongs to in the current row
-        row_sets = list(range(self.width))
+        row_sets: list[int | None] = list(range(self.width))
         next_set_id = self.width
 
         for y in range(self.height):
@@ -293,12 +294,14 @@ class MazeGenerator:
 
             # --- STEP 2: Vertical Merging ---
             if not is_last_row:
-                next_row_sets = [None] * self.width
+                next_row_sets: list[int | None] = [None] * self.width
 
                 # Group cell indices by their set ID
-                sets_in_row = {}
+                sets_in_row: dict[int, list[int]] = {}
                 for x in range(self.width):
                     s = row_sets[x]
+                    if s is None:
+                        continue  # Type guard to satisfy mypy
                     if s not in sets_in_row:
                         sets_in_row[s] = []
                     sets_in_row[s].append(x)
@@ -404,7 +407,7 @@ class MazeGenerator:
     # =============================
     # Maze Solving Algorithm One - BFS
     # suitable for finding one path only... therefore, best for perfect maze.
-    def solve_maze(self):
+    def solve_maze(self) -> str:
         if not self.grid:
             raise ValueError("Maze not generated yet...")
 
@@ -417,7 +420,7 @@ class MazeGenerator:
         grid_visit_flag[start_y][start_x] = True
 
         # dictionary to keep track of path each cell was reached from.
-        cell_from = {}
+        cell_from: dict[tuple[int, int], tuple[int, int, str] | None] = {}
         cell_from[(start_x, start_y)] = None
 
         # to keep track of the nodes we currently traversed
@@ -472,7 +475,7 @@ class MazeGenerator:
     # =============================
     # 42 Pattern Embedding
 
-    def embed_42_pattern(self):
+    def embed_42_pattern(self) -> None:
         pattern_map = [
             "1000111",
             "1000001",

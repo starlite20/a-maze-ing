@@ -7,7 +7,7 @@ from config_handler import Configuration, read_config, validate_and_cast_config
 from maze_display import display_maze, Color
 
 
-def clear_screen():
+def clear_screen() -> None:
     os.system('cls' if os.name == 'nt' else 'clear')
 
 

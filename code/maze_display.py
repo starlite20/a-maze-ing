@@ -80,7 +80,7 @@ def show_ascii_maze(
 
         return "   "
 
-    def has_wall(r, c, direction):
+    def has_wall(r: int, c: int, direction: Direction) -> int:
         return maze.grid[r][c].walls & direction
 
     # drawing the maze

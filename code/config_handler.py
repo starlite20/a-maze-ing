@@ -13,7 +13,7 @@ class Configuration():
         self.set_algorithm(algorithm)
         self.set_embed_pattern(pattern_42)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"WIDTH={self.WIDTH}"
             f"HEIGHT={self.HEIGHT}"
@@ -26,13 +26,13 @@ class Configuration():
             f"PATTERN_42={'True' if self.PATTERN_42 else 'False'}"
         )
 
-    def set_width(self, width: int) -> None:
+    def set_width(self, width: str) -> None:
         try:
             self.WIDTH = int(width)
         except (ValueError, TypeError):
             raise ValueError(f"Invalid value for WIDTH: {width}")
 
-    def set_height(self, height: int) -> None:
+    def set_height(self, height: str) -> None:
         try:
             self.HEIGHT = int(height)
         except (ValueError, TypeError):
@@ -80,11 +80,10 @@ class Configuration():
         self.PATTERN_42 = True if embed_pattern == "True" else False
 
     def set_seed(self, seed: str) -> None:
+        self.SEED: int | None = None
         try:
             if seed != "":
                 self.SEED = int(seed)
-            else:
-                self.SEED = None
         except (ValueError, TypeError):
             raise ValueError(f"Invalid value for seed: {seed}")
 
@@ -169,7 +168,7 @@ def read_config(filename: str) -> dict[str, str]:
             configuration = {}
             for line in lines:
                 key, value = get_val(line.strip())
-                if key is not None:
+                if key is not None and value is not None:
                     configuration[key] = value
             return configuration
 
