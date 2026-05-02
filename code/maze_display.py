@@ -14,13 +14,10 @@ class Color(Enum):
 
 
 def display_maze(
-        maze: MazeGenerator, display_mode: str | None,
-        color_mode: int = 0, show_path: bool = False, solution: str = ""
+        maze: MazeGenerator, color_mode: int = 0,
+        show_path: bool = False, solution: str = ""
 ) -> None:
-    if display_mode == "ASCII":
-        show_ascii_maze(maze, color_mode, show_path, solution)
-    elif display_mode == "MLX":
-        pass
+    show_ascii_maze(maze, color_mode, show_path, solution)
 
 
 def show_ascii_maze(maze, color_mode: int, show_path: bool, solution: str):

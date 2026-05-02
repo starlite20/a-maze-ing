@@ -19,9 +19,6 @@ PERFECT=False
 # algorithm for maze creation
 ALGORITHM=DFS
 
-# display mode (ASCII / MLX)
-DISPLAY_MODE=ASCII
-
 #embed 42 pattern
 PATTERN_42=True
 #--------------------------------

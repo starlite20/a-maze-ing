@@ -17,8 +17,5 @@ PERFECT=True
 # algorithm for maze creation
 ALGORITHM=ELLER
 
-# display mode (ASCII / MLX)
-DISPLAY_MODE=ASCII
-
 #embed 42 pattern
 PATTERN_42=True

@@ -5,7 +5,7 @@ class Configuration():
     def __init__(
             self, width, height, entry, exit_pos,
             output_file, perfect, seed, algorithm,
-            display_mode, pattern_42, interactive_mode) -> None:
+            pattern_42, interactive_mode) -> None:
         self.set_width(width)
         self.set_height(height)
         self.set_entry(entry)
@@ -14,7 +14,6 @@ class Configuration():
         self.set_perfect(perfect)
         self.set_seed(seed)
         self.set_algorithm(algorithm)
-        self.set_display_mode(display_mode)
         self.set_embed_pattern(pattern_42)
         self.set_interactive_mode(interactive_mode)
 
@@ -28,7 +27,6 @@ class Configuration():
             f"PERFECT={'True' if self.PERFECT else 'False'}"
             f"SEED={self.SEED}"
             f"ALGORITHM={self.ALGORITHM}"
-            f"DISPLAY_MODE={self.DISPLAY_MODE}"
             f"PATTERN_42={'True' if self.PATTERN_42 else 'False'}"
             f"INTERACTIVE_MODE={'True' if self.INTERACTIVE_MODE else 'False'}"
         )
@@ -104,13 +102,6 @@ class Configuration():
             )
         self.ALGORITHM = algorithm
 
-    def set_display_mode(self, display_mode):
-        if display_mode not in ["", "ASCII", "MLX"]:
-            raise ValueError(
-                f"Specified display mode '{display_mode}' not supported."
-            )
-        self.DISPLAY_MODE = display_mode
-
     def set_output_file(self, output_file):
         self.OUTPUT_FILE = output_file
 
@@ -133,8 +124,6 @@ class Configuration():
             self.set_seed(value)
         elif key == "ALGORITHM":
             self.set_algorithm(value)
-        elif key == "DISPLAY_MODE":
-            self.set_display_mode(value)
         elif key == "PATTERN_42":
             self.set_embed_pattern(value)
         elif key == "OUTPUT_FILE":
@@ -164,7 +153,6 @@ def validate_and_cast_config(config) -> Configuration:
         perfect=config["PERFECT"],
         seed=config["SEED"] if "SEED" in config else "",
         algorithm=config["ALGORITHM"] if "ALGORITHM" in config else "",
-        display_mode=config["DISPLAY_MODE"] if "DISPLAY_MODE" in config else "",
         pattern_42=config["PATTERN_42"] if "PATTERN_42" in config else "False",
         interactive_mode=config["INTERACTIVE_MODE"] if "INTERACTIVE_MODE" in config else "False"
     )

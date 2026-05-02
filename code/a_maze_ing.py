@@ -46,8 +46,7 @@ def run_regular_mode(config: Configuration) -> None:
 
     while True:
         clear_screen()
-        display_maze(maze, config.DISPLAY_MODE,
-                     color_mode, show_path, solution)
+        display_maze(maze, color_mode, show_path, solution)
         print(
             "\n1. Regenerate\n2. Show/Hide Path\n3. Rotate Colors\n4. Write Output & Quit\n")
 
@@ -79,8 +78,7 @@ def run_interactive_mode(config: Configuration) -> None:
             f"Size: {config.WIDTH}x{config.HEIGHT} | Seed: {config.SEED} | Perfect: {config.PERFECT}")
 
         if generated_once:
-            display_maze(maze, config.DISPLAY_MODE,
-                         color_mode, show_path, solution)
+            display_maze(maze, color_mode, show_path, solution)
         else:
             print("\nNo maze generated yet.")
 
@@ -114,9 +112,8 @@ def open_settings_menu(config: Configuration):
         print(f"4. EXIT   ({config.EXIT})")
         print(f"5. PERFECT ({config.PERFECT})")
         print(f"6. SEED   ({config.SEED})")
-        print(f"7. ALGO    ({config.ALGORITHM})")
-        print(f"8. DISPLAY ({config.DISPLAY_MODE})")
-        print(f"9. PATTERN ({config.PATTERN_42})")
+        print(f"7. ALGORITHM    ({config.ALGORITHM})")
+        print(f"8. PATTERN ({config.PATTERN_42})")
         print("0. Back to Main Menu")
 
         choice = input("Edit which setting? ").strip()
@@ -128,7 +125,7 @@ def open_settings_menu(config: Configuration):
         key_map = {
             '1': "WIDTH", '2': "HEIGHT", '3': "ENTRY", '4': "EXIT",
             '5': "PERFECT", '6': "SEED", '7': "ALGORITHM",
-            '8': "DISPLAY_MODE", '9': "PATTERN_42"
+            '8': "PATTERN_42"
         }
 
         if choice in key_map:
