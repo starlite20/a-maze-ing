@@ -2,7 +2,7 @@ from enum import IntFlag
 from dataclasses import dataclass
 import random
 import json
-from typing import Callable
+from collections import deque
 
 class Direction(IntFlag):
     NORTH = 1
@@ -43,12 +43,12 @@ class MazeGenerator:
 
     # =============================
     # custom validators
-    def set_width(self, width: int):
+    def set_width(self, width: int) -> None:
         if not isinstance(width, int) or width < 2:
             raise ValueError(f"Width must be an integer >= 2. Got: {width}")
         self.width = width
 
-    def set_height(self, height: int):
+    def set_height(self, height: int) -> None:
         if not isinstance(height, int) or height < 2:
             raise ValueError(f"Height must be an integer >= 2. Got: {height}")
         self.height = height
@@ -80,12 +80,12 @@ class MazeGenerator:
             )
         self.perfect = perfect
 
-    def set_seed(self, seed: int) -> None:
+    def set_seed(self, seed: int | None) -> None:
         if seed is not None and not isinstance(seed, int):
             raise ValueError(
                 f"Seed must be an integer or None. Got: {type(seed)}"
             )
-        self.seed = seed if seed > 0 else random.randint(0, 2**32 - 1)
+        self.seed = seed
 
     def set_pattern_42(self, embed_pattern: bool = False) -> None:
         if not isinstance(embed_pattern, bool):
@@ -133,7 +133,7 @@ class MazeGenerator:
 
         return neighbours
 
-    def _remove_walls(self, current: Cell, next_cell: Cell):
+    def _remove_walls(self, current: Cell, next_cell: Cell) -> None:
         # calculate the difference in position to find direction
         dx = current.x - next_cell.x
         dy = current.y - next_cell.y
@@ -158,7 +158,7 @@ class MazeGenerator:
             current.remove_wall(Direction.SOUTH)
             next_cell.remove_wall(Direction.NORTH)
 
-    def generate_maze(self, algorithm: str = "DFS"):
+    def generate_maze(self, algorithm: str = "DFS") -> None:
         self.create_grid()
 
         if self.embed_pattern:
@@ -201,39 +201,40 @@ class MazeGenerator:
                 if active:
                     self._log_event("backtrack", to=[active.x, active.y])
 
-    def _is_3x3_open(self, center_cell_col: int, center_cell_row: int) -> bool:
-        # if the surrounding neighbour has the chance of crossing border, it means its not a 3x3 open space
-        if (center_cell_col - 1 < 0 or center_cell_col + 1 >= self.width or
-                center_cell_row - 1 < 0 or center_cell_row + 1 >= self.height):
-            return False
+    def _is_3x3_open(self, col: int, row: int) -> bool:
+        min_x = col - 1
+        max_x = col + 1
+        min_y = row - 1
+        max_y = row + 1
+        for current_row in range(min_y, max_y + 1):
+            for current_col in range(min_x, max_x + 1):
+                if current_col < 0 or current_row < 0 or current_col + 2 >= self.width or current_row + 2 >= self.height:
+                    continue
+                
+                is_open = True
+                
+                for row_in_grid in range(3):
+                    for column_in_grid in range(3):
+                        cell = self.grid[current_row + row_in_grid][current_col + column_in_grid]
+                        
+                        # verfying if there is a wall on the right-side
+                        if column_in_grid < 2 and (cell.walls & Direction.EAST):
+                            is_open = False
+                            break
+                        
+                        # verfying if there is a wall on the bottom-side
+                        if row_in_grid < 2 and (cell.walls & Direction.SOUTH):
+                            is_open = False
+                            break
+                        
+                    if not is_open:
+                        break
+                
+                # if is_open is still flagged true, it means this is a 3x3 corridor.
+                if is_open:
+                    return True
+        return False
 
-        # checking all 6 internal EAST - rightside - walls
-        # checking top mid and bottom rows
-        for row_offset in range(-1, 2):
-            # checking left and mid cols
-            for col_offset in range(-1, 1):
-                col = center_cell_col + col_offset
-                row = center_cell_row + row_offset
-
-                # we're doing bitwise operator check here
-                # walls sum value   AND   east value
-                if self.grid[row][col].walls & Direction.EAST:
-                    return False
-
-        # similarly checking 6 internal SOUTH - bottomside - walls.
-        # checking top mid
-        for row_offset in range(-1, 1):
-            # checking left and mid and right cols
-            for col_offset in range(-1, 2):
-                col = center_cell_col + col_offset
-                row = center_cell_row + row_offset
-
-                # walls sum value   AND   south value
-                if self.grid[row][col].walls & Direction.SOUTH:
-                    return False
-
-        # if no internal East or South walls were found, it's a 3x3 open area
-        return True
 
     # Eller's part
     def _generate_maze_eller(self) -> None:
@@ -385,7 +386,7 @@ class MazeGenerator:
         cell_from[(start_x, start_y)] = None
 
         # to keep track of the nodes we currently traversed
-        queue = [(start_x, start_y)]
+        queue: deque[tuple[int, int]] = deque([(start_x, start_y)])
 
         moves = [
             (Direction.NORTH, 0, -1, "N"),
@@ -395,7 +396,7 @@ class MazeGenerator:
         ]
 
         while len(queue) > 0:
-            current_x, current_y = queue.pop(0)
+            current_x, current_y = queue.popleft()
 
             if current_x == end_x and current_y == end_y:
                 break
@@ -449,7 +450,9 @@ class MazeGenerator:
         pattern_height = len(pattern_map)
 
         if self.width < pattern_width or self.height < pattern_height:
-            raise ValueError("Maze too small to embed '42' pattern.")
+            print("Warning: Maze too small to embed '42' pattern. Omitting pattern.")
+            self.embed_pattern = False
+            return
 
         pattern_start_x = (self.width // 2) - (pattern_width // 2)
         pattern_start_y = (self.height // 2) - (pattern_height // 2)

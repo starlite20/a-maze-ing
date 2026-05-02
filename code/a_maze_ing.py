@@ -42,7 +42,6 @@ def generate_and_solve(config: Configuration) -> tuple[MazeGenerator, str]:
 
 def run_amazing(config: Configuration) -> None:
     maze, solution = generate_and_solve(config)
-    generated_once = True
 
     show_path = False
     color_mode = 0
@@ -63,16 +62,16 @@ def run_amazing(config: Configuration) -> None:
             color_mode = (color_mode + 1) % len(Color)
         elif choice == '4':
             write_output_file(maze, config, solution)
-            
+
             try:
                 os.remove("history.json")
             except FileNotFoundError:
                 pass
-            
+
             sys.exit(0)
         elif choice == '5':
-            if not generated_once:
-                print("Please generate a maze first (Option 1).")
+            if not maze.history:
+                print("No generation history available to animate.")
                 input("Press Enter to continue...")
                 continue
 
@@ -81,55 +80,20 @@ def run_amazing(config: Configuration) -> None:
             show_path = False
         else:
             print("Incorrect Option Selected.")
-
-
-def open_settings_menu(config: Configuration):
-    while True:
-        clear_screen()
-        print(Color.CYAN.value + "SETTINGS EDITOR" + Color.RESET.value)
-        print(f"1. WIDTH  ({config.WIDTH})")
-        print(f"2. HEIGHT ({config.HEIGHT})")
-        print(f"3. ENTRY  ({config.ENTRY})")
-        print(f"4. EXIT   ({config.EXIT})")
-        print(f"5. PERFECT ({config.PERFECT})")
-        print(f"6. SEED   ({config.SEED})")
-        print(f"7. ALGORITHM    ({config.ALGORITHM})")
-        print(f"8. PATTERN ({config.PATTERN_42})")
-        print("0. Back to Main Menu")
-
-        choice = input("Edit which setting? ").strip()
-
-        if choice == '0':
-            break
-
-        # Mapping choices to keys
-        key_map = {
-            '1': "WIDTH", '2': "HEIGHT", '3': "ENTRY", '4': "EXIT",
-            '5': "PERFECT", '6': "SEED", '7': "ALGORITHM",
-            '8': "PATTERN_42"
-        }
-
-        if choice in key_map:
-            new_val = input(f"Enter new value for {key_map[choice]}: ").strip()
-            try:
-                config.update_value(key_map[choice], new_val)
-                print(Color.GREEN.value + "Updated!" + Color.RESET.value)
-                input("Press Enter...")
-            except ValueError as e:
-                print(Color.RED.value + f"Error: {e}" + Color.RESET.value)
-                input("Press Enter...")
+            input("Press Enter to continue...")
+            continue
 
 
 def play_animation(maze: MazeGenerator, history_file: str) -> None:
-    frames_per_second = 0.05
+    frames_delay_rate = 0.05
 
     with open(history_file, 'r') as f:
         script = json.load(f)
 
     # creating a preview grid matching the maze dimensions and configuration
     preview_grid = [[Cell(x, y, walls=15, visited=False)
-                   for x in range(maze.width)]
-                  for y in range(maze.height)]
+                     for x in range(maze.width)]
+                    for y in range(maze.height)]
 
     # copying 42 pattern state
     if maze.embed_pattern:
@@ -148,18 +112,37 @@ def play_animation(maze: MazeGenerator, history_file: str) -> None:
             active_cell = preview_grid[y][x]
 
         elif action == "carve":
-            fx, fy = frame["from_"]
-            tx, ty = frame["to"]
-            curr = preview_grid[fy][fx]
-            nxt = preview_grid[ty][tx]
+            from_x, from_y = frame["from_"]
+            to_x, to_y = frame["to"]
+            curr = preview_grid[from_y][from_x]
+            nxt = preview_grid[to_y][to_x]
 
             nxt.visited = True
-            maze._remove_walls(curr, nxt)
+
+            dx = curr.x - nxt.x
+            dy = curr.y - nxt.y
+
+            if dx == 1:
+                curr.remove_wall(Direction.WEST)
+                nxt.remove_wall(Direction.EAST)
+
+            elif dx == -1:
+                curr.remove_wall(Direction.EAST)
+                nxt.remove_wall(Direction.WEST)
+
+            if dy == 1:
+                curr.remove_wall(Direction.NORTH)
+                nxt.remove_wall(Direction.SOUTH)
+
+            elif dy == -1:
+                curr.remove_wall(Direction.SOUTH)
+                nxt.remove_wall(Direction.NORTH)
+
             active_cell = nxt
 
         elif action == "backtrack":
-            tx, ty = frame["to"]
-            active_cell = preview_grid[ty][tx]
+            to_x, to_y = frame["to"]
+            active_cell = preview_grid[to_y][to_x]
 
         # rendering the frame
         clear_screen()
@@ -167,12 +150,12 @@ def play_animation(maze: MazeGenerator, history_file: str) -> None:
         maze.grid = preview_grid
 
         display_maze(maze, color_mode=0, show_path=False, solution="",
-                     current_cell=active_cell, head_cell=None)
+                     current_cell=active_cell)
 
         maze.grid = real_grid
 
         # frame rate
-        time.sleep(frames_per_second)
+        time.sleep(frames_delay_rate)
 
 
 if __name__ == "__main__":

@@ -16,15 +16,14 @@ class Color(Enum):
 def display_maze(
         maze: MazeGenerator, color_mode: int = 0,
         show_path: bool = False, solution: str = "",
-        current_cell: Cell | None = None,
-        head_cell: Cell | None = None
+        current_cell: Cell | None = None
 ) -> None:
-    show_ascii_maze(maze, color_mode, show_path, solution, current_cell, head_cell)
+    show_ascii_maze(maze, color_mode, show_path, solution, current_cell)
 
 
 def show_ascii_maze(
-        maze: MazeGenerator, color_mode: int, show_path: bool, solution: str,
-        current_cell: Cell | None, head_cell: Cell | None
+        maze: MazeGenerator, color_mode: int,
+        show_path: bool, solution: str, current_cell: Cell | None
 ) -> None:
     WALL = "█"
     SPACE = " "

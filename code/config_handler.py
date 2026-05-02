@@ -3,9 +3,9 @@ import sys
 
 class Configuration():
     def __init__(
-            self, width, height, entry, exit_pos,
-            output_file, perfect, seed, algorithm,
-            pattern_42) -> None:
+            self, width: str, height: str, entry: str, exit_pos: str,
+            output_file: str, perfect: str, seed: str, algorithm: str,
+            pattern_42: str) -> None:
         self.set_width(width)
         self.set_height(height)
         self.set_entry(entry)
@@ -29,72 +29,68 @@ class Configuration():
             f"PATTERN_42={'True' if self.PATTERN_42 else 'False'}"
         )
 
-    def set_width(self, width):
+    def set_width(self, width: int) -> None:
         try:
             self.WIDTH = int(width)
         except (ValueError, TypeError):
             raise ValueError(f"Invalid value for WIDTH: {width}")
 
-    def set_height(self, height):
+    def set_height(self, height: int) -> None:
         try:
             self.HEIGHT = int(height)
         except (ValueError, TypeError):
             raise ValueError(f"Invalid value for HEIGHT: {height}")
 
-    def set_entry(self, entry):
-        self.ENTRY = self.split_coords(entry, "ENTRY", self.WIDTH, self.HEIGHT)
+    def set_entry(self, entry: str) -> None:
+        self.ENTRY = self.split_coords(
+            entry, "ENTRY", self.WIDTH, self.HEIGHT)
 
-    def set_exit(self, exit_pos):
+    def set_exit(self, exit_pos: str) -> None:
         self.EXIT = self.split_coords(
             exit_pos, "EXIT", self.WIDTH, self.HEIGHT)
 
-    def split_coords(self, coord_str: str,
-                     field_name: str, width: int,
-                     height: int) -> tuple[int, int]:
+    def split_coords(self, coord_str: str, field_name: str,
+                     width: int, height: int) -> tuple[int, int]:
         try:
             coord_x = int(coord_str.split(",")[0].strip())
             coord_y = int(coord_str.split(",")[1].strip())
-            if (coord_x < 0 or coord_y < 0
-                    or coord_x >= width or coord_y >= height):
+            if coord_x < 0 or coord_y < 0 or coord_x >= width or coord_y >= height:
                 raise ValueError(
-                    f"Coordinates for {field_name} must be within "
-                    f"maze dimensions (0 <= x < {width}, "
-                    f"0 <= y < {height}): {coord_str}"
+                    f"Coordinates for {field_name} must be "
+                    f"within maze dimensions (0 <= x < {width},"
+                    f" 0 <= y < {height}): {coord_str}"
                 )
             return (coord_x, coord_y)
         except (ValueError, TypeError):
             raise ValueError(
-                f"Invalid coordinate format used "
-                f"for {field_name}: {coord_str}"
-            )
+                f"Invalid coordinate format used for {field_name}: {coord_str}")
 
-    def set_perfect(self, perfect):
+    def set_perfect(self, perfect: str) -> None:
         if perfect not in ["True", "False"]:
             raise ValueError(f"Invalid value for PERFECT: {perfect}")
         self.PERFECT = True if perfect == "True" else False
 
-    def set_embed_pattern(self, embed_pattern):
+    def set_embed_pattern(self, embed_pattern: str) -> None:
         if embed_pattern not in ["True", "False"]:
             raise ValueError(f"Invalid value for PATTERN_42: {embed_pattern}")
         self.PATTERN_42 = True if embed_pattern == "True" else False
 
-    def set_seed(self, seed):
+    def set_seed(self, seed: str) -> None:
         try:
             if seed != "":
                 self.SEED = int(seed)
             else:
-                self.SEED = 0
+                self.SEED = None
         except (ValueError, TypeError):
             raise ValueError(f"Invalid value for seed: {seed}")
 
-    def set_algorithm(self, algorithm):
+    def set_algorithm(self, algorithm: str) -> None:
         if algorithm not in ["", "DFS", "ELLER"]:
             raise ValueError(
-                f"Specified algorithm '{algorithm}' not supported."
-            )
+                f"Specified algorithm '{algorithm}' not supported.")
         self.ALGORITHM = algorithm
 
-    def set_output_file(self, output_file):
+    def set_output_file(self, output_file: str) -> None:
         self.OUTPUT_FILE = output_file
 
     def update_value(self, key: str, value: str) -> None:
@@ -124,7 +120,7 @@ class Configuration():
             raise ValueError(f"Unknown configuration key: {key}")
 
 
-def validate_and_cast_config(config) -> Configuration:
+def validate_and_cast_config(config: dict[str, str]) -> Configuration:
     # Ensure all required keys are present in Configuration File
     required_keys = ["WIDTH", "HEIGHT", "ENTRY",
                      "EXIT", "PERFECT", "OUTPUT_FILE"]
@@ -151,7 +147,7 @@ def validate_and_cast_config(config) -> Configuration:
     return configuration
 
 
-def get_val(text):
+def get_val(text: str) -> tuple[str | None, str | None]:
     if not text or text.startswith('#'):
         return None, None
     parts = text.split('=')
@@ -162,7 +158,7 @@ def get_val(text):
     return LHS, RHS
 
 
-def read_config(filename):
+def read_config(filename: str) -> dict[str, str]:
     try:
         with open(filename, 'r') as file:
             lines = file.readlines()
@@ -174,8 +170,6 @@ def read_config(filename):
             return configuration
 
     except FileNotFoundError:
-        print(f"Error: File '{filename}' not found.")
-        sys.exit(1)
+        raise FileNotFoundError(f"Error: File '{filename}' not found.")
     except Exception as e:
-        print(f"Error reading config file '{filename}': {e}")
-        sys.exit(1)
+        raise ValueError(f"Error reading config file '{filename}': {e}")

@@ -1,16 +1,19 @@
-*This project has been created as part of the 42 curriculum by ssujaude , sobied.*
+_This project has been created as part of the 42 curriculum by ssujaude, sobied._
 
 # A-Maze-ing
 
 ## 📖 Description
-**A-Maze-ing** This project is a comprehensive Maze Generation and Solving Suite developed in Python. It is designed to be highly modular, allowing the core generation logic to be decoupled from the user interface and configuration management. The engine handles the creation of complex grid-based structures, ensures mathematical connectivity (Perfect Mazes), and outputs the results in a standardized hexadecimal format.
+__A-Maze-ing__ is a project focused on building a Maze Generator and Maze Solver. Through this project, we explore deeply through the concepts of Graphs & Trees, which leads us to several algorithms to traverse through them. These algorithms help build the maze, and solve as well. This comprehensive Maze Generation and Solving Code is developed in Python.
+
+Throughout the project, modularity and clean readability of the code is a key aspect, thereby allowing the core generation logic to be decoupled from the user interface and configuration management. The engine handles the creation of complex grid-based structures, ensures mathematical connectivity, and outputs the results in a standardized hexadecimal format.
 
 ### ✨ Key Features
-*   **Dual Generation Logic:** Support for **Depth-First Search (DFS)** and **Eller's Algorithm**.
+*   **Dual Generation Logic:** Supports **Depth-First Search (DFS) Algorithm** and **Eller's Algorithm**.
 *   **Perfect & Imperfect Mazes:** Toggle between single-path spanning trees or looped mazes.
-*   **42 Pattern Embedding:** Structural and visual integration of the "42" pattern.
-*   **Pathfinding:** Integrated **BFS-based solver** to calculate the shortest path.
+*   **42 Pattern Embedding:** Integration of the "42" pattern into the maze.
+*   **Maze Solving:** Integrated **Breadth First Search (BFS) based solver** to calculate the shortest path.
 *   **Geometric Constraints:** Automatic prevention of large (3x3) open corridors.
+*   **Animated Maze Generation:** View the clear generation of the maze in a detailed step manner.
 
 ---
 
@@ -78,19 +81,21 @@ maze.generate_maze(algorithm="DFS")
 # 3. Solving
 solution_path = maze.solve_maze()
 print(f"Path taken: {solution_path}") # e.g., "EENNSWW"
-👥 Project Management
-Team: ssujaude, sobied
+
+
+## Project Management
+As a team, we handled the project by splitting up core functionalities and approached the design in a collaborative manner.
 
 Roles: Collaborative design on algorithm logic, memory management optimization, and unit testing.
-
 Planning: Iterative sprints starting with DFS foundation, followed by row-based Eller's logic and pattern embedding.
 
-📚 Resources
+
 Graph Theory: Spanning trees, Spanning Tree algorithms, and BFS traversal.
 
 AI Disclosure: AI was utilized for code validation suggestions, bitmasking optimization, and edge-case testing logic.
 
-🎖 Bonus Features
+
+## Bonus Features
 [x] Multiple generation algorithms (DFS vs Eller's).
 
 [x] Intelligent "42" pattern connectivity fixer.
@@ -98,8 +103,8 @@ AI Disclosure: AI was utilized for code validation suggestions, bitmasking optim
 [x] Reusable package format (.whl / .tar.gz).
 
 
-### Pro Tip for Evaluators
-Yes, including a sample `config.txt` and a snippet of the terminal output (ASCII maze or hex grid) at the bottom of the README is highly recommended! It allows peers to verify your project works within 30 seconds of cloning.
+
+
 
 ## Instructions
 
@@ -118,7 +123,8 @@ python3 a_maze_ing.py config.txt
 ```
 
 
+
+
 ## Resources
 https://www.youtube.com/watch?v=uctN47p_KVk
-Eller's 
-https://weblog.jamisbuck.org/2010/12/29/maze-generation-eller-s-algorithm
+Eller's Algorithm (https://weblog.jamisbuck.org/2010/12/29/maze-generation-eller-s-algorithm)
