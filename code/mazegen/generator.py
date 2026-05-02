@@ -231,36 +231,37 @@ class MazeGenerator:
     # Eller's part
     def _generate_maze_eller(self) -> None:
         random.seed(self.seed)
+        # row_sets tracks which set each cell belongs to in the current row
         row_sets = list(range(self.width))
         next_set_id = self.width
 
         for y in range(self.height):
             is_last_row = (y == self.height - 1)
 
-            # Horiztional
+            # --- STEP 1: Horizontal Merging ---
             for x in range(self.width - 1):
                 current_cell = self.grid[y][x]
                 next_cell = self.grid[y][x + 1]
 
-                # marge condtions for diff set: random or last row
-                # avoid pattern cells
+                # Merge if sets are different AND (random choice OR last row)
                 if row_sets[x] != row_sets[x+1]:
                     if is_last_row or random.choice([True, False]):
+                        # Avoid pattern cells to keep the "42" intact
                         if not (current_cell.pattern or next_cell.pattern):
                             self._remove_walls(current_cell, next_cell)
 
-                            # join the old set team
+                            # Unify the sets: all cells in the old set join the new set
                             old_set = row_sets[x+1]
                             new_set = row_sets[x]
                             for i in range(self.width):
                                 if row_sets[i] == old_set:
                                     row_sets[i] = new_set
 
-            # vertical merging
+            # --- STEP 2: Vertical Merging ---
             if not is_last_row:
                 next_row_sets = [None] * self.width
 
-                # coolect the cells according to there group
+                # Group cell indices by their set ID
                 sets_in_row = {}
                 for x in range(self.width):
                     s = row_sets[x]
@@ -269,31 +270,40 @@ class MazeGenerator:
                     sets_in_row[s].append(x)
 
                 for s, indices in sets_in_row.items():
-                valid_indices = [
+                    # STEP 1: Filter valid cells (No pattern in current or south cell)
+                    valid_indices = [
                         x for x in indices 
-                            if not (self.grid[y][x].pattern or 
-                            self.grid[y+1][x].pattern)
-                                ]
-                    random.shuffle(indices)
-                    num_verticals = random.randint(1, len(indices))
+                        if not (self.grid[y][x].pattern or self.grid[y+1][x].pattern)
+                    ]
 
-                    for i in range(num_verticals):
-                        x = indices[i]
-                        current_cell = self.grid[y][x]
-                        south_cell = self.grid[y+1][x]
+                    # STEP 2: If empty, this set is pattern-blocked; skip it
+                    if not valid_indices:
+                        continue
 
-                        if not (current_cell.pattern or south_cell.pattern):
-                            self._remove_walls(current_cell, south_cell)
-                            next_row_sets[x] = s
+                    # STEP 3: Guarantee at least one drop, then random the rest
+                    random.shuffle(valid_indices)
+                    
+                    # 3a: The Guarantee (First cell always drops)
+                    first_x = valid_indices[0]
+                    self._remove_walls(self.grid[y][first_x], self.grid[y+1][first_x])
+                    next_row_sets[first_x] = s
 
-                # next row prep
+                    # 3b: The Random (50% chance for additional drops)
+                    for i in range(1, len(valid_indices)):
+                        if random.choice([True, False]):
+                            rand_x = valid_indices[i]
+                            self._remove_walls(self.grid[y][rand_x], self.grid[y+1][rand_x])
+                            next_row_sets[rand_x] = s
+
+                # --- STEP 3: Next Row Preparation ---
                 for x in range(self.width):
                     if next_row_sets[x] is None:
+                        # Cell didn't get a vertical drop; assign a brand new Set ID
                         next_row_sets[x] = next_set_id
                         next_set_id += 1
                 row_sets = next_row_sets
 
-        # solver : visited
+        # Post-generation: Mark all as visited so the Solver can work
         for row in self.grid:
             for cell in row:
                 cell.visited = True

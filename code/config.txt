@@ -3,7 +3,7 @@ HEIGHT=15
 ENTRY=0,0
 EXIT=14,14
 OUTPUT_FILE=output_maze.txt
-PERFECT=False
+PERFECT=True
 
 #optional parameters
 #===========================
@@ -21,4 +21,4 @@ ALGORITHM=ELLER
 DISPLAY_MODE=ASCII
 
 #embed 42 pattern
-PATTERN_42=False
+PATTERN_42=True
