@@ -92,3 +92,7 @@ ALGORITHM = <algorithm to be used for the maze generation>
 DISPLAY_MODE = <display mode either ascii or mlx>
 PATTERN_42 = <boolean to state if you want 42 pattern within the maze>
 ```
+
+
+# I moved the output_validator.py inside to be at the same dir with output_mzae.txt
+according to the output_validator.py comment

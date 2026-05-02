@@ -269,6 +269,11 @@ class MazeGenerator:
                     sets_in_row[s].append(x)
 
                 for s, indices in sets_in_row.items():
+                valid_indices = [
+                        x for x in indices 
+                            if not (self.grid[y][x].pattern or 
+                            self.grid[y+1][x].pattern)
+                                ]
                     random.shuffle(indices)
                     num_verticals = random.randint(1, len(indices))
 

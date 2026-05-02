@@ -1,0 +1,29 @@
+# when I run the conf file with these data , solving the algo getting some issues
+
+WIDTH=15
+HEIGHT=15
+ENTRY=10,10
+EXIT=10,11
+OUTPUT_FILE=output_maze.txt
+PERFECT=False
+
+#optional parameters
+#===========================
+
+#get all features and runs 
+#INTERACTIVE_MODE=True
+
+#seed for randomness
+# SEED=5
+
+# algorithm for maze creation
+ALGORITHM=DFS
+
+# display mode (ASCII / MLX)
+DISPLAY_MODE=ASCII
+
+#embed 42 pattern
+PATTERN_42=True
+#--------------------------------
+        output
+![alt text](image.png)
