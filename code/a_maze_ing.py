@@ -161,6 +161,130 @@ def play_animation(maze: MazeGenerator, history_file: str) -> None:
         # frame rate
         time.sleep(frames_delay_rate)
 
+def run_amazing_graphics(config: Configuration) -> None:
+    """Graphical MLX loop rendering PNG assets with an in-window menu."""
+    from mlx import Mlx
+
+    class RenderError(Exception):
+        pass
+
+    m = Mlx()
+    p = m.mlx_init()
+    if not p:
+        print("Error: Failed to initialize MLX.")
+        return
+
+    def load_assets(directory: str) -> dict:
+        loaded_assets = {}
+        if not os.path.exists(directory):
+            raise RenderError(f"Assets directory '{directory}' not found.")
+        for item in os.listdir(directory):
+            file_path = os.path.join(directory, item)
+            if item.endswith(".png"):
+                name = item.removesuffix(".png")
+                try:
+                    asset_key = int(name)  # numeric files: 0.png, 7.png etc
+                except ValueError:
+                    asset_key = name       # named files: "green.png", "path.png" etc
+                image_ptr = m.mlx_png_file_to_image(p, file_path)[0]
+                if not image_ptr:
+                    raise RenderError(f"Failed to load image: {file_path}")
+                loaded_assets[asset_key] = image_ptr
+        return loaded_assets
+
+    maze, solution = generate_and_solve(config)
+    is_path_visible: bool = False
+    colors = [ "yellow","red", "green", "blue"]
+    color_i: int = 0
+    SCALE: int = 32
+
+    try:
+        assets = load_assets("sprites")
+    except RenderError as e:
+        print(f"Graphics Error: {e}")
+        return
+
+    win = m.mlx_new_window(p, SCALE * maze.width, max(SCALE * maze.height, 512), "A-Maze-Ing MLX")
+    if not win:
+        print("Error: Failed to create window.")
+        return
+    m.mlx_clear_window(p, win)
+    m.mlx_do_sync(p)
+
+    def render_maze_cells() -> None:
+        m.mlx_do_sync(p)
+        for row_index, row in enumerate(maze.grid):
+            m.mlx_do_sync(p)
+            for col_index, cell in enumerate(row):
+                pixel_x = col_index * SCALE
+                pixel_y = row_index * SCALE
+                # Draw color background first
+                m.mlx_put_image_to_window(
+                    p, win,
+                    assets[colors[color_i]],
+                    pixel_x, pixel_y)
+                # Then overlay the wall tile on top
+                m.mlx_put_image_to_window(
+                    p, win,
+                    assets[cell.walls],
+                    pixel_x, pixel_y)
+        m.mlx_do_sync(p)
+        
+    def render_path() -> None:
+        m.mlx_do_sync(p)
+        x, y = maze.entry
+        for move in solution[:-1]:
+            match move:
+                case 'N': y -= 1
+                case 'E': x += 1
+                case 'S': y += 1
+                case 'W': x -= 1
+                case _: raise ValueError("path contains invalid character")
+            m.mlx_put_image_to_window(
+                p, win,
+                assets["path"],
+                x * SCALE, y * SCALE)
+            m.mlx_do_sync(p)
+
+    ESC_LINUX, ESC_MAC = 65307, 53
+    KEY_MAP = {
+        10: '1', 11: '2', 12: '3', 13: '4',
+        18: '1', 19: '2', 20: '3', 21: '4',
+    }
+
+    def handle_key_press(keycode: int, _param) -> None:
+        nonlocal maze, solution, is_path_visible
+
+        key = KEY_MAP.get(keycode)
+
+        if key == '1':
+            maze, solution = generate_and_solve(config)
+            is_path_visible = False
+            m.mlx_clear_window(p, win)
+            render_maze_cells()
+
+        elif key == '2':
+            is_path_visible = not is_path_visible
+            render_maze_cells()
+            if is_path_visible:
+                render_path()
+
+        elif key == '4' or keycode in (ESC_LINUX, ESC_MAC):
+            write_output_file(maze, config, solution)
+            try:
+                os.remove("history.json")
+            except FileNotFoundError:
+                pass
+            m.mlx_loop_exit(p)
+
+    def on_close(_param) -> None:
+        m.mlx_loop_exit(p)
+
+    render_maze_cells()
+
+    m.mlx_key_hook(win, handle_key_press, None)
+    m.mlx_hook(win, 17, 0, on_close, None)
+    m.mlx_loop(p)
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
@@ -170,7 +294,10 @@ if __name__ == "__main__":
     maze_config = read_config(sys.argv[1])
     try:
         config = validate_and_cast_config(maze_config)
-        run_amazing(config)
+        if config.DISPLAY != "MLX":
+            run_amazing(config)
+        else:
+            run_amazing_graphics(config)
 
     except ValueError as e:
         print(f"Error: {e}")

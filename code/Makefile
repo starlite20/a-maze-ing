@@ -14,7 +14,9 @@ install:
 	$(PIP) install flake8 mypy
 	
 run:
-	$(PYTHON) $(MAIN) $(CONFIG)
+# 	$(PYTHON) $(MAIN) $(CONFIG)
+	source .venv/bin/activate
+	python3 a_maze_ing.py config.txt
 
 
 debug:

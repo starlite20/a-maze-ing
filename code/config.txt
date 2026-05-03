@@ -15,3 +15,5 @@ ALGORITHM=DFS
 
 #embed 42 pattern
 PATTERN_42=True
+
+DISPLAY=MLX

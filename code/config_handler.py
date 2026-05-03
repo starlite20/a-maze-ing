@@ -2,7 +2,7 @@ class Configuration():
     def __init__(
             self, width: str, height: str, entry: str, exit_pos: str,
             output_file: str, perfect: str, seed: str, algorithm: str,
-            pattern_42: str) -> None:
+            pattern_42: str, display: str) -> None:
         self.set_width(width)
         self.set_height(height)
         self.set_entry(entry)
@@ -11,6 +11,7 @@ class Configuration():
         self.set_perfect(perfect)
         self.set_seed(seed)
         self.set_algorithm(algorithm)
+        self.set_display(display)
         self.set_embed_pattern(pattern_42)
 
     def __str__(self) -> str:
@@ -23,6 +24,7 @@ class Configuration():
             f"PERFECT={'True' if self.PERFECT else 'False'}"
             f"SEED={self.SEED}"
             f"ALGORITHM={self.ALGORITHM}"
+            f"DISPLAY={self.DISPLAY}"
             f"PATTERN_42={'True' if self.PATTERN_42 else 'False'}"
         )
 
@@ -93,6 +95,12 @@ class Configuration():
                 f"Specified algorithm '{algorithm}' not supported.")
         self.ALGORITHM = algorithm
 
+    def set_display(self, display: str) -> None:
+        if display not in ["", "ASCII", "MLX"]:
+            raise ValueError(
+                f"Specified display mode '{display}' not supported.")
+        self.DISPLAY = display
+
     def set_output_file(self, output_file: str) -> None:
         self.OUTPUT_FILE = output_file
 
@@ -144,6 +152,7 @@ def validate_and_cast_config(config: dict[str, str]) -> Configuration:
         perfect=config["PERFECT"],
         seed=config["SEED"] if "SEED" in config else "",
         algorithm=config["ALGORITHM"] if "ALGORITHM" in config else "",
+        display=config["DISPLAY"] if "DISPLAY" in config else "",
         pattern_42=config["PATTERN_42"] if "PATTERN_42" in config else "False",
     )
 
