@@ -286,7 +286,7 @@ def get_val(text: str) -> tuple[str | None, str | None]:
     """
     if not text or text.startswith('#'):
         return None, None
-    parts = text.split('=')
+    parts = text.split('=', 1)
     if len(parts) != 2:
         raise ValueError(f"Invalid config line: '{text}'")
     LHS = parts[0].strip()

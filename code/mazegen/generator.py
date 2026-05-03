@@ -411,7 +411,6 @@ class MazeGenerator:
             for cell in row:
                 if not cell.pattern:
                     cell.visited = True
-        pass
 
     def _generate_maze_dfs(self) -> None:
         """Generates a maze using Depth-First Search (Recursive Backtracker).
@@ -669,6 +668,9 @@ class MazeGenerator:
                         self._remove_walls(
                             self.grid[cy][cx], self.grid[ny][nx]
                         )
+                        self.grid[cy][cx].visited = True
+                        self.grid[ny][nx].visited = True
+                        self._log_event("carve", from_=[cx, cy], to=[nx, ny])
                         punched = True
                         break
 
@@ -687,7 +689,11 @@ class MazeGenerator:
                             self._remove_walls(
                                 self.grid[cy][cx], self.grid[ny][nx]
                             )
+                            self.grid[cy][cx].visited = True
+                            self.grid[ny][nx].visited = True
                             punched = True
+                            self._log_event("carve",
+                                            from_=[cx, cy], to=[nx, ny])
                             break
 
     def _bfs_reachable(
