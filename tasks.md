@@ -27,6 +27,7 @@
 [✅] animated working of the maze
 
 [] DOCSTRINGS!
+[] requirements.txt ??? we dont seem to need
 
 [🛠️] documentation
 [🛠️] comparision of algorithms
