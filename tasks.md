@@ -3,36 +3,42 @@
 
 
 [✅] maze configuration parser
-
 [✅] mazegenerator class setup
-
 [✅] strict encapsulation concepts for data management
-
 [✅] maze generation - algorithm 1
-[🛠️] maze generation - algorithm 2
-
+[✅] maze generation - algorithm 2
 [✅] maze solving - algorithm 1
-[🛠️] maze solving - algorithm 2
-
 [✅] Adding 42 Pattern Embedding in Maze
+[✅] ascii visuals
+[✅] animated working of the maze
+[✅] DOCSTRINGS
+
+[✅] documentation
+[✅] comparision of algorithms
+[✅] working explanation
+
+[✅] flake8
+[✅] mypy
+
+
 
 [🛠️] makefile
 
-[✅] ascii visuals
-[🛠️] minilibx visuals
+
+
 
 [🛠️] whl package creation
 [] package specific documentation
 
-[✅] animated working of the maze
-
-[] DOCSTRINGS!
+[] Unit testing
 [] requirements.txt ??? we dont seem to need
 
-[🛠️] documentation
-[🛠️] comparision of algorithms
-[🛠️] working explanation
-
-[🛠️] flake8
-[🛠️] mypy
 [🛠️] gitignore
+
+
+[] preparation for evaluation
+
+
+
+IGNORE
+[🛠️] minilibx visuals - STOPPED
