@@ -264,6 +264,332 @@ Reusable components include:
 
 ---
 
+## Package Documentation
+
+### Overview
+
+- `mazegen` is a standalone Python package that procedurally generates mazes using either a **Depth-First Search (DFS)** or **Eller's** algorithm.
+- It supports perfect mazes (single unique path), imperfect mazes (with loops), optional pattern embedding, seed-based reproducibility, and BFS-based solving.
+
+---
+
+### Installation
+
+From the root of the repository, inside a virtual environment:
+
+```bash
+pip install mazegen-*.whl
+## or
+pip install mazegen-*.tar.gz
+```
+
+To build the package yourself from source:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install build
+python3 -m build
+```
+
+This produces both `.whl` and `.tar.gz` files in the `dist/` directory.
+
+---
+
+### Quick Start
+
+```python
+from mazegen import MazeGenerator
+
+maze = MazeGenerator(
+    width=15,
+    height=15,
+    entry_pos=(0, 0),
+    exit_pos=(14, 14),
+    perfect=True,
+    seed=42
+)
+
+maze.generate_maze()       # uses DFS by default
+solution = maze.solve_maze()
+
+print(solution)            # e.g. "SSSSEENNSS"
+```
+
+---
+
+### Class Reference
+
+#### `MazeGenerator`
+
+```python
+MazeGenerator(
+    width: int,
+    height: int,
+    entry_pos: tuple[int, int],
+    exit_pos: tuple[int, int],
+    perfect: bool,
+    seed: int | None,
+    pattern_42: bool = False
+)
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `width` | `int` | Number of columns. Must be >= 2. |
+| `height` | `int` | Number of rows. Must be >= 2. |
+| `entry_pos` | `tuple[int, int]` | Start cell as `(x, y)`. Must be within bounds. |
+| `exit_pos` | `tuple[int, int]` | End cell as `(x, y)`. Must differ from entry. |
+| `perfect` | `bool` | If `True`, generates a perfect maze (no loops). |
+| `seed` | `int \| None` | Fixed seed for reproducibility. Pass `None` for random. |
+| `pattern_42` | `bool` | If `True`, embeds a visible `42` pattern in the center. |
+
+---
+
+### Generating a Maze
+
+```python
+maze.generate_maze(algorithm="DFS")    ## default
+maze.generate_maze(algorithm="ELLER")  ## row-by-row algorithm
+```
+
+Supported algorithms:
+
+| Value | Description |
+|---|---|
+| `"DFS"` | Recursive backtracker. Produces long winding corridors. |
+| `"ELLER"` | Row-by-row set merging. Faster on tall mazes. |
+
+After calling `generate_maze()`, the grid is fully populated and ready to
+use. If `seed=None` was passed, the actual seed used is captured and stored
+in `maze.seed` for later reference.
+
+---
+
+### Custom Parameters — Examples
+
+#### Fixed seed for reproducibility
+
+```python
+maze = MazeGenerator(
+    width=20, height=20,
+    entry_pos=(0, 0), exit_pos=(19, 19),
+    perfect=True,
+    seed=1234
+)
+maze.generate_maze()
+print(f"Seed used: {maze.seed}")
+```
+
+#### Random seed — capture after generation
+
+```python
+maze = MazeGenerator(
+    width=20, height=20,
+    entry_pos=(0, 0), exit_pos=(19, 19),
+    perfect=False,
+    seed=None
+)
+maze.generate_maze()
+print(f"Seed used: {maze.seed}")
+## Pass this value back as seed= to reproduce the same maze
+```
+
+#### Imperfect maze with loops
+
+```python
+maze = MazeGenerator(
+    width=15, height=15,
+    entry_pos=(0, 0), exit_pos=(14, 14),
+    perfect=False,   ## removes ~5% of internal walls after generation
+    seed=99
+)
+maze.generate_maze()
+```
+
+#### With 42 pattern
+
+```python
+## Maze must be at least 11 wide and 9 tall for the pattern to fit
+maze = MazeGenerator(
+    width=20, height=15,
+    entry_pos=(0, 0), exit_pos=(19, 14),
+    perfect=True,
+    seed=7,
+    pattern_42=True
+)
+maze.generate_maze()
+```
+
+---
+
+### Accessing the Grid Structure
+
+After `generate_maze()`, the maze is accessible via `maze.grid` —
+a 2D list indexed as `maze.grid[row][col]`, i.e. `maze.grid[y][x]`.
+
+```python
+## Iterate all cells
+for row in maze.grid:
+    for cell in row:
+        print(cell.x, cell.y, bin(cell.walls))
+```
+
+#### `Cell` attributes
+
+| Attribute | Type | Description |
+|---|---|---|
+| `cell.x` | `int` | Column index of the cell. |
+| `cell.y` | `int` | Row index of the cell. |
+| `cell.walls` | `int` | Bitmask of closed walls (see below). |
+| `cell.visited` | `bool` | Whether the cell was reached during generation. |
+| `cell.pattern` | `bool` | Whether the cell is part of the 42 pattern. |
+
+#### Wall bitmask
+
+Each cell's `walls` integer encodes which walls are **closed** (present):
+
+| Bit | Value | Direction |
+|---|---|---|
+| 0 | 1 | North |
+| 1 | 2 | East |
+| 2 | 4 | South |
+| 3 | 8 | West |
+
+```python
+from mazegen import Direction
+
+cell = maze.grid[5][3]          ## row 5, column 3
+
+## Check individual walls
+if cell.walls & Direction.NORTH:
+    print("North wall is closed")
+
+if cell.walls & Direction.EAST:
+    print("East wall is closed")
+
+## 15 = all walls closed (0b1111)
+## 0  = all walls open
+```
+
+---
+
+### Solving the Maze
+
+```python
+solution = maze.solve_maze()
+print(solution)   ## e.g. "SSSEENWWSS"
+```
+
+Returns a string of cardinal direction characters representing the
+**shortest path** from `entry_pos` to `exit_pos` using BFS.
+
+| Character | Meaning |
+|---|---|
+| `N` | Move north (y - 1) |
+| `E` | Move east  (x + 1) |
+| `S` | Move south (y + 1) |
+| `W` | Move west  (x - 1) |
+
+Returns an empty string `""` if no path exists.
+
+#### Replaying the solution manually
+
+```python
+x, y = maze.entry
+for move in solution:
+    if move == 'N': y -= 1
+    elif move == 'S': y += 1
+    elif move == 'E': x += 1
+    elif move == 'W': x -= 1
+
+assert (x, y) == maze.exit   ## always True for a valid maze
+```
+
+---
+
+### Generation History & Animation
+
+Every carve and visit step is recorded during generation and accessible
+via `maze.history` — a list of event dictionaries.
+
+```python
+maze.generate_maze()
+
+## Each entry looks like:
+## {"step": 0, "action": "visit", "cell": [x, y]}
+## {"step": 1, "action": "carve", "from_": [x, y], "to": [x, y]}
+## {"step": 2, "action": "backtrack", "to": [x, y]}
+
+for event in maze.history[:5]:
+    print(event)
+```
+
+#### Exporting history to JSON
+
+```python
+maze.export_history("history.json")
+```
+
+Writes all events to a JSON file, which can be replayed frame-by-frame
+for animation.
+
+---
+
+### Printing the Grid (debug)
+
+```python
+maze.print_grid()
+## Outputs one hex digit per cell, one row per line:
+## 9511F...
+## A3C0B...
+```
+
+Each hex digit matches the wall bitmask for that cell, identical to the
+output file format used by the main program.
+
+---
+
+### Complete Example
+
+```python
+from mazegen import MazeGenerator, Direction
+
+## Create a 20x15 perfect maze with a fixed seed
+maze = MazeGenerator(
+    width=20,
+    height=15,
+    entry_pos=(0, 0),
+    exit_pos=(19, 14),
+    perfect=True,
+    seed=2025,
+    pattern_42=True
+)
+
+## Generate using Eller's algorithm
+maze.generate_maze(algorithm="ELLER")
+
+## Print the seed actually used
+print(f"Seed: {maze.seed}")
+
+## Solve and print the path
+solution = maze.solve_maze()
+print(f"Solution ({len(solution)} steps): {solution}")
+
+## Inspect a specific cell
+cell = maze.grid[0][0]   ## top-left corner
+print(f"Cell (0,0) walls: {cell.walls:04b}")
+
+## Check if north wall of entry is closed (should be — it's a border)
+if cell.walls & Direction.NORTH:
+    print("Border wall intact ✓")
+
+## Export generation history
+maze.export_history("history.json")
+```
+
+---
+
 
 ## Team and Project Management
 

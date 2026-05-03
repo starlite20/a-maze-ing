@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "mazegen"
+version = "1.0.0"
+description = "A procedural maze generator supporting DFS and Eller's algorithms"
+requires-python = ">=3.10"
+
+[tool.setuptools]
+py-modules = ["generator"]
+
+[project.optional-dependencies]
+dev = ["flake8", "mypy", "build"]
