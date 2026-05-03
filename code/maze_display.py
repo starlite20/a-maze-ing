@@ -4,7 +4,7 @@ from enum import Enum
 
 class Color(Enum):
     """ANSI escape sequences for terminal text coloring and formatting.
-    
+
     Attributes:
         CYAN, RED, GREEN, PURPLE, YELLOW, GREY: Standard foreground colors.
         RESET: Resets terminal formatting to default.
@@ -28,11 +28,16 @@ def display_maze(
     """Interface function to render the maze to the terminal.
 
     Args:
-        maze (MazeGenerator): The maze object containing grid and coordinate data.
-        color_mode (int): Integer offset to cycle through available color themes.
-        show_path (bool): Whether to highlight the solution path.
-        solution (str): String of directions (N, S, E, W) representing the path.
-        current_cell (Cell, optional): The cell to highlight as 'active' (e.g., during animation).
+        maze (MazeGenerator): The maze object containing
+        grid and coordinate data.
+        color_mode (int): Integer offset to cycle
+        through available color themes.
+        show_path (bool): Whether to highlight
+        the solution path.
+        solution (str): String of directions
+        (N, S, E, W)representing the path.
+        current_cell (Cell, optional): The cell to highlight
+        as 'active' (e.g., during animation).
     """
     show_ascii_maze(maze, color_mode, show_path, solution, current_cell)
 
@@ -43,7 +48,7 @@ def show_ascii_maze(
 ) -> None:
     """Executes the complex ASCII rendering logic for the maze.
 
-    Iterates through the maze grid to print wall characters, spaces, and 
+    Iterates through the maze grid to print wall characters, spaces, and
     colored path segments based on the cell state and the selected color mode.
 
     Args:
@@ -51,7 +56,8 @@ def show_ascii_maze(
         color_mode (int): Selection index for the color palette.
         show_path (bool): If True, calculates and renders the path overlay.
         solution (str): The sequence of moves to solve the maze.
-        current_cell (Cell | None): A specific cell to highlight with a unique style.
+        current_cell (Cell | None): A specific cell to
+        highlight with a unique style.
     """
     WALL = "█"
     SPACE = " "
@@ -95,8 +101,11 @@ def show_ascii_maze(
     def render_cell(row: int, col: int) -> str:
         """Determines the visual representation of a single cell's interior.
 
-        Checks for visitation status, entry/exit points, solution path membership, 
-        and special pattern flags to return the correct colored block or space.
+        Checks for visitation status,
+        entry/exit points,
+        solution path membership,
+        and special pattern flags to return the
+        correct colored block or space.
 
         Args:
             row (int): The vertical index of the cell.

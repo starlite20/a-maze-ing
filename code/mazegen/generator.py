@@ -8,11 +8,10 @@ from collections import deque
 from typing import Any, Optional
 
 
-
 class Direction(IntFlag):
     """Bitmask representation for maze cell walls.
 
-    Each attribute corresponds to a single bit. A set bit indicates that 
+    Each attribute corresponds to a single bit. A set bit indicates that
     the wall in that cardinal direction is present (closed).
 
     Attributes:
@@ -31,15 +30,18 @@ class Direction(IntFlag):
 class Cell:
     """Represents a individual unit within the maze grid.
 
-    Tracks the physical boundaries (walls), exploration state, and 
-    coordinate position of a single cell.
+    Tracks the physical boundaries (walls), exploration
+    state, and coordinate position of a single cell.
 
     Attributes:
         x (int): The horizontal column index (0-based).
         y (int): The vertical row index (0-based).
-        walls (int): Bitmask representing present walls. Defaults to 15 (all closed).
-        visited (bool): exploration status for generation/solving algorithms.
-        pattern (bool): Indicates if the cell belongs to a specific visual pattern.
+        walls (int): Bitmask representing present walls.
+        Defaults to 15 (all closed).
+        visited (bool): exploration status for
+        generation/solving algorithms.
+        pattern (bool): Indicates if the cell
+        belongs to a specific visual pattern.
     """
     x: int
     y: int
@@ -56,31 +58,41 @@ class Cell:
         return (self.x, self.y)
 
     def remove_wall(self, direction: Direction) -> None:
-        """Removes the wall in the specified direction using bitwise negation.
+        """Removes the wall in the specified
+        direction using bitwise negation.
 
         Args:
-            direction (Direction): The cardinal direction of the wall to clear.
+            direction (Direction): The cardinal
+            direction of the wall to clear.
         """
         self.walls &= ~int(direction)
 
 
 class MazeGenerator:
-    """A procedural maze generator supporting DFS and Eller's algorithms.
+    """A procedural maze generator supporting
+    DFS and Eller's algorithms.
 
-    This class manages the lifecycle of a maze, including configuration validation,
-    grid initialization, pattern embedding, generation via multiple algorithms,
+    This class manages the lifecycle of a maze,
+    including configuration validation,
+    grid initialization, pattern embedding,
+    generation via multiple algorithms,
     and shortest-path solving.
 
     Attributes:
-        grid (list[list[Cell]]): The 2D array representing the maze structure.
-        history (list[dict]): A chronological log of generation steps (visits, carves).
+        grid (list[list[Cell]]): The 2D array representing
+        the maze structure.
+        history (list[dict]): A chronological log
+        of generation steps (visits, carves).
         width (int): Number of columns in the maze.
         height (int): Number of rows in the maze.
         entry (tuple): (x, y) coordinates for the starting point.
         exit (tuple): (x, y) coordinates for the end point.
-        perfect (bool): If True, the maze is a spanning tree (no cycles).
-        seed (int): The seed used for the current generation's randomness.
-        embed_pattern (bool): Whether to block out the '42' pattern in the center.
+        perfect (bool): If True, the maze is
+        a spanning tree (no cycles).
+        seed (int): The seed used for the current
+        generation's randomness.
+        embed_pattern (bool): Whether to block out
+        the '42' pattern in the center.
     """
 
     # 42 Pattern Map where '1' = fully-closed pattern cell, '0' = open cell.
@@ -95,7 +107,7 @@ class MazeGenerator:
     _PATTERN_WIDTH: int = len(_PATTERN_42_MAP[0])
     _PATTERN_HEIGHT: int = len(_PATTERN_42_MAP)
 
-    # Minimum maze size to accommodate the pattern with a 2-cell margin all around
+    # Minimum maze size for pattern with a 2-cell margin around
     MIN_WIDTH_FOR_42: int = _PATTERN_WIDTH + 4
     MIN_HEIGHT_FOR_42: int = _PATTERN_HEIGHT + 4
 
@@ -111,16 +123,22 @@ class MazeGenerator:
         entry_pos: tuple[int, int], exit_pos: tuple[int, int],
         perfect: bool, seed: int | None, pattern_42: bool = False
     ) -> None:
-        """Initializes the generator and validates all spatial and logic constraints.
+        """Initializes the generator and
+        validates all spatial and logic constraints.
 
         Args:
             width (int): Horizontal dimension (>= 2).
             height (int): Vertical dimension (>= 2).
-            entry_pos (tuple[int, int]): Starting (x, y) coordinates.
-            exit_pos (tuple[int, int]): Destination (x, y) coordinates.
-            perfect (bool): Whether to enforce a perfect (loop-free) maze.
-            seed (int | None): Seed for reproducibility; random if None.
-            pattern_42 (bool): If True, embeds the '42' pattern map.
+            entry_pos (tuple[int, int]): Starting (x, y)
+            coordinates.
+            exit_pos (tuple[int, int]): Destination (x, y)
+            coordinates.
+            perfect (bool): Whether to enforce
+            a perfect (loop-free) maze.
+            seed (int | None): Seed for reproducibility;
+            random if None.
+            pattern_42 (bool): If True, embeds the '42'
+            pattern map.
         """
         self.set_width(width)
         self.set_height(height)
@@ -163,8 +181,10 @@ class MazeGenerator:
         """Checks if a coordinate pair is within the current grid dimensions.
 
         Args:
-            coord (tuple[int, int]): The (x, y) pair to check.
-            name (str): The label used in the error message if validation fails.
+            coord (tuple[int, int]): The (x, y)
+            pair to check.
+            name (str): The label used in the
+            error message if validation fails.
 
         Raises:
             ValueError: If the coordinate is malformed or out of bounds.
@@ -262,7 +282,8 @@ class MazeGenerator:
     # maze generation
 
     def create_grid(self) -> None:
-        """Initializes the maze grid with closed Cells based on height and width."""
+        """Initializes the maze grid with closed
+        Cells based on height and width."""
         self.grid = []
         for y in range(self.height):
             row = []
@@ -274,19 +295,22 @@ class MazeGenerator:
             self.grid.append(row)
 
     def print_grid(self) -> None:
-        """Outputs the grid's wall bitmasks in hexadecimal format to the terminal."""
+        """Outputs the grid's wall bitmasks in
+        hexadecimal format to the terminal."""
         for row in self.grid:
             print("".join([f"{cell.walls:X}" for cell in row]))
 
     def get_unvisited_neighbours(self, x: int, y: int) -> list[Cell]:
-        """Identifies adjacent cells that have not yet been visited or blocked by patterns.
+        """Identifies adjacent cells that have not yet been
+        visited or blocked by patterns.
 
         Args:
             x (int): Current column index.
             y (int): Current row index.
 
         Returns:
-            list[Cell]: A list of available Cell objects (North, East, South, West).
+            list[Cell]: A list of available Cell objects
+            (North, East, South, West).
         """
         neighbours = []
 
@@ -352,11 +376,13 @@ class MazeGenerator:
     def generate_maze(self, algorithm: str = "DFS") -> None:
         """Executes the maze generation process using the chosen algorithm.
 
-        Orchestrates the lifecycle: grid creation, pattern embedding, 
-        core generation, component connectivity check, and imperfection injection.
+        Orchestrates the lifecycle: grid creation, pattern embedding,
+        core generation, component connectivity check,
+        and imperfection injection.
 
         Args:
-            algorithm (str): The generation logic to use ("DFS" or "ELLER").
+            algorithm (str): The generation logic
+            to use ("DFS" or "ELLER").
 
         Raises:
             ValueError: If an unsupported algorithm string is provided.
@@ -379,7 +405,7 @@ class MazeGenerator:
 
         if not self.perfect:
             self._generate_imperfections()
-        
+
         # Mark all non-pattern cells as visited
         for row in self.grid:
             for cell in row:
@@ -501,7 +527,8 @@ class MazeGenerator:
                     self.grid[y][mandatory],
                     self.grid[y + 1][mandatory],
                 )
-                self._log_event("carve", from_=[mandatory, y], to=[mandatory, y + 1])
+                self._log_event("carve", from_=[mandatory, y], to=[
+                                mandatory, y + 1])
                 next_row_sets[mandatory] = s_id
 
                 # optional extra south openings
@@ -514,12 +541,12 @@ class MazeGenerator:
                         next_row_sets[x] = s_id
 
             row_sets = next_row_sets
-    
 
     def _is_3x3_open(self, col: int, row: int) -> bool:
         """Determines if removing a wall would create a wide 3x3 open area.
 
-        This is used to maintain a 'maze-like' structure by preventing 
+        This is used to maintain a 'maze-like'
+        structure by preventing
         large open corridors or rooms.
 
         Args:
@@ -573,8 +600,10 @@ class MazeGenerator:
     def _connect_components(self) -> None:
         """Verifies and fixes grid connectivity issues.
 
-        Uses BFS to find isolated components (often caused by the central pattern
-        blocking Eller's vertical expansion) and punches walls to merge them
+        Uses BFS to find isolated components
+        (often caused by the central pattern
+        blocking Eller's vertical expansion)
+        and punches walls to merge them
         into the main path starting from the entry.
         """
 
@@ -671,7 +700,8 @@ class MazeGenerator:
             start_y (int): Origin row.
 
         Returns:
-            set[tuple[int, int]]: A set of (x, y) coordinates reachable from the start.
+            set[tuple[int, int]]: A set of (x, y)
+            coordinates reachable from the start.
         """
         visited: set[tuple[int, int]] = set()
         queue: deque[tuple[int, int]] = deque([(start_x, start_y)])
@@ -694,8 +724,8 @@ class MazeGenerator:
     def _generate_imperfections(self) -> None:
         """Randomly removes walls to create loops in the maze.
 
-        This is only called if `perfect` is False. It respects the 3x3 open 
-        area constraint.
+        This is only called if `perfect` is False.
+        It respects the 3x3 open area constraint.
         """
         imperfectness_factor = 5
 
@@ -840,9 +870,11 @@ class MazeGenerator:
         'visited' so they are ignored by generation and solving logic.
 
         Raises:
-            ValueError: If the entry or exit positions fall within the pattern area.
+            ValueError: If the entry or exit
+            positions fall within the pattern area.
         """
-        if self.width < self.MIN_WIDTH_FOR_42 or self.height < self.MIN_HEIGHT_FOR_42:
+        if (self.width < self.MIN_WIDTH_FOR_42
+                or self.height < self.MIN_HEIGHT_FOR_42):
             print("Warning: Maze too small to embed "
                   "'42' pattern. Omitting pattern.")
             self.embed_pattern = False

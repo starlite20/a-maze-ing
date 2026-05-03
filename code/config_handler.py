@@ -1,8 +1,10 @@
 class Configuration():
     """Manages and validates maze generation settings.
 
-    This class handles the parsing, casting, and validation of raw configuration
-    strings into appropriate Python types (int, tuple, bool, etc.).
+    This class handles the parsing, casting,
+    and validation of raw configuration
+    strings into appropriate Python types
+    (int, tuple, bool, etc.).
     """
     def __init__(
             self, width: str, height: str, entry: str, exit_pos: str,
@@ -97,7 +99,8 @@ class Configuration():
 
     def split_coords(self, coord_str: str, field_name: str,
                      width: int, height: int) -> tuple[int, int]:
-        """Splits a coordinate string and validates bounds against grid dimensions.
+        """Splits a coordinate string and validates
+        bounds against grid dimensions.
 
         Args:
             coord_str (str): The "x,y" string to parse.
@@ -228,13 +231,16 @@ class Configuration():
 
 
 def validate_and_cast_config(config: dict[str, str]) -> Configuration:
-    """Validates a dictionary of raw config data and returns a Configuration object.
+    """Validates a dictionary of raw config data and
+    returns a Configuration object.
 
     Args:
-        config (dict[str, str]): Key-value pairs extracted from a config file.
+        config (dict[str, str]): Key-value pairs
+        extracted from a config file.
 
     Returns:
-        Configuration: A fully initialized and validated configuration instance.
+        Configuration: A fully initialized and
+        validated configuration instance.
 
     Raises:
         ValueError: If mandatory keys are missing from the dictionary.
@@ -272,7 +278,7 @@ def get_val(text: str) -> tuple[str | None, str | None]:
         text (str): A line of text from the file.
 
     Returns:
-        tuple[str | None, str | None]: A tuple containing (Key, Value). 
+        tuple[str | None, str | None]: A tuple containing (Key, Value).
             Returns (None, None) for empty lines or comments.
 
     Raises:

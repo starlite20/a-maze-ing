@@ -15,15 +15,21 @@ def clear_screen() -> None:
 def write_output_file(maze: MazeGenerator,
                       config: Configuration,
                       solution: str) -> None:
-    """Formats the maze data and saves it to the configured output file.
+    """Formats the maze data and saves it to the
+    configured output file.
 
-    The file includes the hexadecimal wall representation of the grid, 
-    entry/exit coordinates, and the solution path string.
+    The file includes the hexadecimal wall
+    representation of the grid,
+    entry/exit coordinates, and the
+    solution path string.
 
     Args:
-        maze (MazeGenerator): The generated maze object containing the grid.
-        config (Configuration): The configuration object containing the output path.
-        solution (str): A string representation of the solution path.
+        maze (MazeGenerator): The generated maze object
+        containing the grid.
+        config (Configuration): The configuration object
+        containing the output path.
+        solution (str): A string representation of
+        the solution path.
     """
     maze_txt = ""
     for row in maze.grid:
@@ -45,13 +51,16 @@ def write_output_file(maze: MazeGenerator,
 
 
 def generate_and_solve(config: Configuration) -> tuple[MazeGenerator, str]:
-    """Initializes a maze generator, creates the maze, and finds the solution.
+    """Initializes a maze generator, creates
+    the maze, and finds the solution.
 
     Args:
-        config (Configuration): Settings for width, height, seed, and algorithm.
+        config (Configuration): Settings for
+        width, height, seed, and algorithm.
 
     Returns:
-        tuple[MazeGenerator, str]: A tuple containing the populated MazeGenerator 
+        tuple[MazeGenerator, str]: A tuple containing
+        the populated MazeGenerator
             instance and the solution string.
     """
     maze = MazeGenerator(
@@ -65,11 +74,13 @@ def generate_and_solve(config: Configuration) -> tuple[MazeGenerator, str]:
 def run_amazing(config: Configuration) -> None:
     """Main application loop for the interactive maze interface.
 
-    Handles user input for regenerating mazes, toggling path visibility, 
+    Handles user input for regenerating mazes,
+    toggling path visibility,
     cycling colors, and triggering animations.
 
     Args:
-        config (Configuration): The initial configuration used to build the maze.
+        config (Configuration): The initial
+        configuration used to build the maze.
     """
     maze, solution = generate_and_solve(config)
 
@@ -124,14 +135,18 @@ def run_amazing(config: Configuration) -> None:
 
 
 def play_animation(maze: MazeGenerator, history_file: str) -> None:
-    """Plays a frame-by-frame terminal animation of the maze generation process.
+    """Plays a frame-by-frame terminal animation of
+    the maze generation process.
 
-    Reads from a JSON history file to simulate the 'visit', 'carve', and 
-    'backtrack' steps of the algorithm visually.
+    Reads from a JSON history file to simulate the
+    'visit', 'carve', and 'backtrack'
+    steps of the algorithm visually.
 
     Args:
-        maze (MazeGenerator): The maze object used for dimensions and rendering context.
-        history_file (str): Path to the JSON file containing generation steps.
+        maze (MazeGenerator): The maze object used
+        for dimensions and rendering context.
+        history_file (str): Path to the JSON file
+        containing generation steps.
     """
     frames_delay_rate = 0.05
 
