@@ -27,7 +27,6 @@ To achieve maze generation, we have the following algorithms.
 # Perfect Maze Generation
 DFS is the best fit, as it guarantees the perfect maze path, and also bydefault ensures that no corridors are larger or equal to 3x3 at any chance.
 
-
 # Imperfect Maze Generation
 We run perfect maze generation first, and then iteratively remove a few walls and continuously ensure this doesnt create a larger corridor by chance.
 
