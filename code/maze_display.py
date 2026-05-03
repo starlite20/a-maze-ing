@@ -3,6 +3,13 @@ from enum import Enum
 
 
 class Color(Enum):
+    """ANSI escape sequences for terminal text coloring and formatting.
+    
+    Attributes:
+        CYAN, RED, GREEN, PURPLE, YELLOW, GREY: Standard foreground colors.
+        RESET: Resets terminal formatting to default.
+        BOLD: Applies bold weight to the text.
+    """
     CYAN = '\033[96m'
     RED = '\033[91m'
     GREEN = '\033[92m'
@@ -18,6 +25,15 @@ def display_maze(
         show_path: bool = False, solution: str = "",
         current_cell: Cell | None = None
 ) -> None:
+    """Interface function to render the maze to the terminal.
+
+    Args:
+        maze (MazeGenerator): The maze object containing grid and coordinate data.
+        color_mode (int): Integer offset to cycle through available color themes.
+        show_path (bool): Whether to highlight the solution path.
+        solution (str): String of directions (N, S, E, W) representing the path.
+        current_cell (Cell, optional): The cell to highlight as 'active' (e.g., during animation).
+    """
     show_ascii_maze(maze, color_mode, show_path, solution, current_cell)
 
 
@@ -25,6 +41,18 @@ def show_ascii_maze(
         maze: MazeGenerator, color_mode: int,
         show_path: bool, solution: str, current_cell: Cell | None
 ) -> None:
+    """Executes the complex ASCII rendering logic for the maze.
+
+    Iterates through the maze grid to print wall characters, spaces, and 
+    colored path segments based on the cell state and the selected color mode.
+
+    Args:
+        maze (MazeGenerator): The maze instance to be printed.
+        color_mode (int): Selection index for the color palette.
+        show_path (bool): If True, calculates and renders the path overlay.
+        solution (str): The sequence of moves to solve the maze.
+        current_cell (Cell | None): A specific cell to highlight with a unique style.
+    """
     WALL = "█"
     SPACE = " "
 
@@ -37,6 +65,15 @@ def show_ascii_maze(
     pattern_color = colors[(color_mode + 5) % len_colors].value
 
     def paint(text: str, color: str) -> str:
+        """Wraps text in ANSI color codes.
+
+        Args:
+            text (str): The string to be colored.
+            color (str): The ANSI escape sequence to apply.
+
+        Returns:
+            str: The colored string followed by a reset code.
+        """
         return f"{color}{text}{Color.RESET.value}"
 
     # path tracing
@@ -56,6 +93,18 @@ def show_ascii_maze(
             path_coords.add((y, x))
 
     def render_cell(row: int, col: int) -> str:
+        """Determines the visual representation of a single cell's interior.
+
+        Checks for visitation status, entry/exit points, solution path membership, 
+        and special pattern flags to return the correct colored block or space.
+
+        Args:
+            row (int): The vertical index of the cell.
+            col (int): The horizontal index of the cell.
+
+        Returns:
+            str: A 3-character wide string representing the cell's center.
+        """
         cell = maze.grid[row][col]
 
         if not cell.visited and not cell.pattern:
@@ -79,6 +128,16 @@ def show_ascii_maze(
         return "   "
 
     def has_wall(r: int, c: int, direction: Direction) -> int:
+        """Checks if a specific wall exists for a cell in a given direction.
+
+        Args:
+            r (int): Row index.
+            c (int): Column index.
+            direction (Direction): The direction to check (NORTH, SOUTH, etc.).
+
+        Returns:
+            int: A non-zero value if the wall exists, 0 otherwise.
+        """
         return maze.grid[r][c].walls & direction
 
     # drawing the maze

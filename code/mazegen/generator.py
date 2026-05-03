@@ -36,14 +36,16 @@ from typing import Any, Optional
 
 
 class Direction(IntFlag):
-    """Wall Direction based bitmask.
+    """Bitmask representation for maze cell walls.
 
-    Each bit encodes one wall of a cell:
-      bit 0 (1)  = North
-      bit 1 (2)  = East
-      bit 2 (4)  = South
-      bit 3 (8)  = West
-    A set bit means the wall is closed or present.
+    Each attribute corresponds to a single bit. A set bit indicates that 
+    the wall in that cardinal direction is present (closed).
+
+    Attributes:
+        NORTH (int): bit 0 (value 1)
+        EAST (int): bit 1 (value 2)
+        SOUTH (int): bit 2 (value 4)
+        WEST (int): bit 3 (value 8)
     """
     NORTH = 1
     EAST = 2
@@ -53,16 +55,18 @@ class Direction(IntFlag):
 
 @dataclass
 class Cell:
-    """A single maze cell.
+    """Represents a individual unit within the maze grid.
+
+    Tracks the physical boundaries (walls), exploration state, and 
+    coordinate position of a single cell.
 
     Attributes:
-        x: Column index (0-based).
-        y: Row index (0-based).
-        walls: Bitmask of closed walls (all 4 closed = 15).
-        visited: Flag to keep track of visited cells.
-        pattern: Flag to specify if this cell is part of a pattern.
+        x (int): The horizontal column index (0-based).
+        y (int): The vertical row index (0-based).
+        walls (int): Bitmask representing present walls. Defaults to 15 (all closed).
+        visited (bool): exploration status for generation/solving algorithms.
+        pattern (bool): Indicates if the cell belongs to a specific visual pattern.
     """
-
     x: int
     y: int
     walls: int = 15
@@ -70,44 +74,39 @@ class Cell:
     pattern: bool = False
 
     def get_position(self) -> tuple[int, int]:
-        """Return ``(x, y)`` tuple."""
+        """Retrieves the cell's grid coordinates.
+
+        Returns:
+            tuple[int, int]: A tuple in the format (x, y).
+        """
         return (self.x, self.y)
 
     def remove_wall(self, direction: Direction) -> None:
-        """Remove a wall in the given direction.
+        """Removes the wall in the specified direction using bitwise negation.
 
         Args:
-            direction: The wall to remove.
+            direction (Direction): The cardinal direction of the wall to clear.
         """
         self.walls &= ~int(direction)
 
 
 class MazeGenerator:
-    """Generate a maze using Eller's row-by-row algorithm.
+    """A procedural maze generator supporting DFS and Eller's algorithms.
 
-    Usage::
+    This class manages the lifecycle of a maze, including configuration validation,
+    grid initialization, pattern embedding, generation via multiple algorithms,
+    and shortest-path solving.
 
-        gen = MazeGenerator(
-            width=20, height=15,
-            entry_pos=(0, 0), exit_pos=(19, 14),
-            perfect=True, seed=42,
-            pattern_42=True,
-        )
-        gen.generate_maze(algorithm="ELLER")
-        path = gen.solve_maze()   # e.g. "NNEESSWW"
-        gen.print_grid()
-
-    Args:
-        width: Number of columns (≥ 2).
-        height: Number of rows (≥ 2).
-        entry_pos: ``(x, y)`` of the entrance cell.
-        exit_pos: ``(x, y)`` of the exit cell.
-        perfect: If ``True``, generate a perfect maze (spanning tree, no
-                 cycles).  If ``False``, add random extra openings.
-        seed: RNG seed for reproducibility.  ``None`` or ≤ 0 picks a random
-              seed automatically.
-        pattern_42: If ``True``, embed the '42' pattern as fully-closed cells
-                    in the centre of the maze.
+    Attributes:
+        grid (list[list[Cell]]): The 2D array representing the maze structure.
+        history (list[dict]): A chronological log of generation steps (visits, carves).
+        width (int): Number of columns in the maze.
+        height (int): Number of rows in the maze.
+        entry (tuple): (x, y) coordinates for the starting point.
+        exit (tuple): (x, y) coordinates for the end point.
+        perfect (bool): If True, the maze is a spanning tree (no cycles).
+        seed (int): The seed used for the current generation's randomness.
+        embed_pattern (bool): Whether to block out the '42' pattern in the center.
     """
 
     # 42 Pattern Map where '1' = fully-closed pattern cell, '0' = open cell.
@@ -138,7 +137,17 @@ class MazeGenerator:
         entry_pos: tuple[int, int], exit_pos: tuple[int, int],
         perfect: bool, seed: int | None, pattern_42: bool = False
     ) -> None:
-        """Validate parameters and initialise state."""
+        """Initializes the generator and validates all spatial and logic constraints.
+
+        Args:
+            width (int): Horizontal dimension (>= 2).
+            height (int): Vertical dimension (>= 2).
+            entry_pos (tuple[int, int]): Starting (x, y) coordinates.
+            exit_pos (tuple[int, int]): Destination (x, y) coordinates.
+            perfect (bool): Whether to enforce a perfect (loop-free) maze.
+            seed (int | None): Seed for reproducibility; random if None.
+            pattern_42 (bool): If True, embeds the '42' pattern map.
+        """
         self.set_width(width)
         self.set_height(height)
         self.set_entry_exit_pos(entry_pos, exit_pos)
@@ -149,26 +158,26 @@ class MazeGenerator:
         self.history: list[dict[str, Any]] = []
 
     def set_width(self, width: int) -> None:
-        """Set and validate maze width.
+        """Sets and validates the maze width.
 
         Args:
-            width: Must be an integer ≥ 2.
+            width (int): Desired width.
 
         Raises:
-            ValueError: If validation fails.
+            ValueError: If width is not an integer or is less than 2.
         """
         if not isinstance(width, int) or width < 2:
             raise ValueError(f"Width must be an integer >= 2. Got: {width}")
         self.width: int = width
 
     def set_height(self, height: int) -> None:
-        """Set and validate maze height.
+        """Sets and validates the maze height.
 
         Args:
-            height: Must be an integer ≥ 2.
+            height (int): Desired height.
 
         Raises:
-            ValueError: If validation fails.
+            ValueError: If height is not an integer or is less than 2.
         """
         if not isinstance(height, int) or height < 2:
             raise ValueError(f"Height must be an integer >= 2. Got: {height}")
@@ -177,14 +186,14 @@ class MazeGenerator:
     def _is_valid_coord(self,
                         coord: tuple[int, int],
                         name: str) -> None:
-        """Validate that *coord* is a tuple of two ints inside maze bounds.
+        """Checks if a coordinate pair is within the current grid dimensions.
 
         Args:
-            coord: The coordinate to validate.
-            name: Human-readable label for error messages.
+            coord (tuple[int, int]): The (x, y) pair to check.
+            name (str): The label used in the error message if validation fails.
 
         Raises:
-            ValueError: If validation fails.
+            ValueError: If the coordinate is malformed or out of bounds.
         """
         if (
             not isinstance(coord, tuple)
@@ -202,14 +211,14 @@ class MazeGenerator:
                            entry_pos: tuple[int, int],
                            exit_pos: tuple[int, int]
                            ) -> None:
-        """Set and validate entry and exit positions.
+        """Validates and assigns the entry and exit points.
 
         Args:
-            entry_pos: ``(x, y)`` of the entrance — must be inside bounds.
-            exit_pos: ``(x, y)`` of the exit — must differ from entry.
+            entry_pos (tuple[int, int]): Start position.
+            exit_pos (tuple[int, int]): End position.
 
         Raises:
-            ValueError: If any constraint is violated.
+            ValueError: If positions are identical or out of bounds.
         """
         self._is_valid_coord(entry_pos, "Entry")
         self._is_valid_coord(exit_pos, "Exit")
@@ -221,13 +230,13 @@ class MazeGenerator:
         self.exit: tuple[int, int] = exit_pos
 
     def set_perfect(self, perfect: bool) -> None:
-        """Set the perfect-maze flag.
+        """Defines whether the maze will be generated as a perfect maze.
 
         Args:
-            perfect: ``True`` for a spanning-tree maze with no cycles.
+            perfect (bool): True for no loops, False for an imperfect maze.
 
         Raises:
-            ValueError: If not a bool.
+            ValueError: If the input is not a boolean.
         """
         if not isinstance(perfect, bool):
             raise ValueError(
@@ -236,14 +245,13 @@ class MazeGenerator:
         self.perfect: bool = perfect
 
     def set_seed(self, seed: int | None) -> None:
-        """Set the Randomness seed value.
+        """Stores the provided seed or None for automatic randomization.
 
         Args:
-            seed: Integer seed for reproducibility.  Pass ``None`` to have
-                  the seed chosen automatically at generation time.
+            seed (int | None): Reproducibility seed.
 
         Raises:
-            ValueError: If not an int or None.
+            ValueError: If the seed is not an integer or None.
         """
         if seed is not None and not isinstance(seed, int):
             raise ValueError(
@@ -252,24 +260,23 @@ class MazeGenerator:
         self.seed: int | None = seed
 
     def _randomize_seed(self) -> None:
-        """Assign a random seed if none was provided.
+        """Initializes the random number generator using the stored seed.
 
-        Calling this at the start of each generation method ensures that
-        ``self.seed`` is always an ``int`` after the call, making the run
-        reproducible even when the caller passed ``None``.
+        If seed is None, it generates a random 32-bit integer and stores it
+        so the specific run remains reproducible if requested.
         """
         if self.seed is None:
             self.seed = random.randrange(2 ** 32)
         random.seed(self.seed)
 
     def set_pattern_42(self, embed_pattern: bool = False) -> None:
-        """Enable or disable embedding of the '42' pattern.
+        """Sets the flag for embedding the numerical '42' pattern.
 
         Args:
-            embed_pattern: ``True`` to embed the pattern.
+            embed_pattern (bool): True to enable pattern blocking.
 
         Raises:
-            ValueError: If not a bool.
+            ValueError: If the input is not a boolean.
         """
         if not isinstance(embed_pattern, bool):
             raise ValueError(
@@ -281,11 +288,7 @@ class MazeGenerator:
     # maze generation
 
     def create_grid(self) -> None:
-        """Allocate the grid as a 2-D list of fresh ``Cell`` objects.
-
-        All cells start with ``walls = 15`` (all four walls closed) and
-        ``pattern = False``.
-        """
+        """Initializes the maze grid with closed Cells based on height and width."""
         self.grid = []
         for y in range(self.height):
             row = []
@@ -297,11 +300,20 @@ class MazeGenerator:
             self.grid.append(row)
 
     def print_grid(self) -> None:
-        """Print grid to stdout in hex format (one row per line)."""
+        """Outputs the grid's wall bitmasks in hexadecimal format to the terminal."""
         for row in self.grid:
             print("".join([f"{cell.walls:X}" for cell in row]))
 
     def get_unvisited_neighbours(self, x: int, y: int) -> list[Cell]:
+        """Identifies adjacent cells that have not yet been visited or blocked by patterns.
+
+        Args:
+            x (int): Current column index.
+            y (int): Current row index.
+
+        Returns:
+            list[Cell]: A list of available Cell objects (North, East, South, West).
+        """
         neighbours = []
 
         # North (x, y-1)
@@ -331,15 +343,14 @@ class MazeGenerator:
         return neighbours
 
     def _remove_walls(self, current: Cell, next_cell: Cell) -> None:
-        """Remove the shared wall between *current* and *next_cell*.
+        """Clears the wall bitmask between two adjacent cells.
 
-        Works out the direction automatically from the cells' coordinates and
-        updates **both** cells so the shared wall is always coherent (if one
-        cell has an open east, its east neighbour has an open west).
+        Detects the relative orientation of the cells and updates the `walls`
+        attribute for both to ensure consistency.
 
         Args:
-            current: The source cell.
-            next_cell: The destination cell (must be a direct neighbour).
+            current (Cell): The starting cell.
+            next_cell (Cell): The adjacent neighbor to connect to.
         """
         dx = current.x - next_cell.x
         dy = current.y - next_cell.y
@@ -365,20 +376,16 @@ class MazeGenerator:
             next_cell.remove_wall(Direction.NORTH)
 
     def generate_maze(self, algorithm: str = "DFS") -> None:
-        """Generate the maze using the specified algorithm.
+        """Executes the maze generation process using the chosen algorithm.
 
-        Supported algorithms: ``"ELLER"``, ``"DFS"``.
-
-        After generation:
-        - If ``pattern_42`` was requested and the maze is large enough, the
-          '42' pattern is visible as a cluster of fully-closed cells.
-        - Full connectivity of all non-pattern cells is guaranteed.
-        - No 3×3 open area exists.
-        - If ``perfect=False``, a small percentage of extra walls are removed
-          to introduce cycles (while still respecting the 3×3 constraint).
+        Orchestrates the lifecycle: grid creation, pattern embedding, 
+        core generation, component connectivity check, and imperfection injection.
 
         Args:
-            algorithm: Algorithm identifier (case-insensitive).
+            algorithm (str): The generation logic to use ("DFS" or "ELLER").
+
+        Raises:
+            ValueError: If an unsupported algorithm string is provided.
         """
         self.create_grid()
 
@@ -407,12 +414,9 @@ class MazeGenerator:
         pass
 
     def _generate_maze_dfs(self) -> None:
-        """Generate a perfect maze using recursive-backtracker (DFS).
+        """Generates a maze using Depth-First Search (Recursive Backtracker).
 
-        Uses an explicit stack to avoid Python recursion limits.
-
-        Args:
-            None — uses ``self.entry`` as the start cell.
+        Uses an explicit stack and a history logger for generation playback.
         """
         start_cell = self.grid[self.entry[1]][self.entry[0]]
         start_cell.visited = True
@@ -441,6 +445,11 @@ class MazeGenerator:
                     self._log_event("backtrack", to=[active.x, active.y])
 
     def _generate_maze_eller(self) -> None:
+        """Generates a maze using Eller's row-by-row algorithm.
+
+        This algorithm handles maze creation row-by-row, using sets to manage
+        connectivity and ensuring every row is connected to the next.
+        """
         self._randomize_seed()
 
         row_sets: list[int] = list(range(self.width))
@@ -534,21 +543,17 @@ class MazeGenerator:
     
 
     def _is_3x3_open(self, col: int, row: int) -> bool:
-        """Return ``True`` if the 3×3 block centred on ``(cx, cy)`` is open.
+        """Determines if removing a wall would create a wide 3x3 open area.
 
-        "Fully open" means no internal east or south walls exist within the
-        3×3 grid (i.e. all 9 cells are mutually passable horizontally and
-        vertically, forming a corridor wider than 2 cells).
-
-        Cells on the maze border cannot be the centre of a valid 3×3 block,
-        so those return ``False`` immediately.
+        This is used to maintain a 'maze-like' structure by preventing 
+        large open corridors or rooms.
 
         Args:
-            cx: Column of the centre cell.
-            cy: Row of the centre cell.
+            col (int): Center column to check.
+            row (int): Center row to check.
 
         Returns:
-            ``True`` if removing a wall here would create a 3×3 open area.
+            bool: True if a 3x3 open block exists or would be created.
         """
         min_x = col - 1
         max_x = col + 1
@@ -592,26 +597,11 @@ class MazeGenerator:
         return False
 
     def _connect_components(self) -> None:
-        """Ensure all non-pattern cells form a single connected component.
+        """Verifies and fixes grid connectivity issues.
 
-        Why this is needed
-        ------------------
-        Pattern cells can fully block all vertical exits of a set during
-        Eller's Pass 2.  When that happens, the cells *below* the pattern
-        block receive fresh isolated set IDs with no upward link.
-
-        This method detects such isolated regions via BFS and punches the
-        minimum number of walls to merge them into the main component.  Wall
-        removal always goes through ``_remove_walls`` so coherence is kept.
-
-        The approach
-        ------------
-        1. BFS from entry — mark reachable component as "main".
-        2. Scan grid for any unvisited non-pattern cell.
-        3. BFS from that cell to label its component.
-        4. Scan the border of that component for a cell that is wall-adjacent
-           to the main component, and break that wall.
-        5. Repeat until all cells are reachable.
+        Uses BFS to find isolated components (often caused by the central pattern
+        blocking Eller's vertical expansion) and punches walls to merge them
+        into the main path starting from the entry.
         """
 
         max_passes = self.width * self.height
@@ -700,14 +690,14 @@ class MazeGenerator:
     def _bfs_reachable(
         self, start_x: int, start_y: int
     ) -> set[tuple[int, int]]:
-        """Return all non-pattern cells reachable from ``(start_x, start_y)``.
+        """Calculates all cells reachable from a starting point via open paths.
 
         Args:
-            start_x: Column of the starting cell.
-            start_y: Row of the starting cell.
+            start_x (int): Origin column.
+            start_y (int): Origin row.
 
         Returns:
-            Set of ``(x, y)`` tuples reachable without crossing pattern cells.
+            set[tuple[int, int]]: A set of (x, y) coordinates reachable from the start.
         """
         visited: set[tuple[int, int]] = set()
         queue: deque[tuple[int, int]] = deque([(start_x, start_y)])
@@ -728,7 +718,11 @@ class MazeGenerator:
         return visited
 
     def _generate_imperfections(self) -> None:
-        # consider only n-1 rows and columns. ignoring the last.
+        """Randomly removes walls to create loops in the maze.
+
+        This is only called if `perfect` is False. It respects the 3x3 open 
+        area constraint.
+        """
         imperfectness_factor = 5
 
         internal_walls = ((self.width - 1) * self.height) + \
@@ -788,14 +782,13 @@ class MazeGenerator:
     # Maze Solving Algorithm One - BFS
     # suitable for finding one path only... therefore, best for perfect maze.
     def solve_maze(self) -> str:
-        """Finds the shortest path from entry to exit using BFS.
+        """Finds the shortest solution path using Breadth-First Search.
 
         Returns:
-            A string of directions representing the
-            shortest path between entry and exit.
+            str: A string of directions (N, E, S, W) representing the path.
 
         Raises:
-            ValueError: If the maze has not been generated yet.
+            ValueError: If called before the maze has been generated.
         """
         if not self.grid:
             raise ValueError(
@@ -867,17 +860,13 @@ class MazeGenerator:
     # 42 Pattern Embedding
 
     def _embed_42_pattern(self) -> None:
-        """Mark cells that form the '42' pattern as permanently closed.
+        """Blocks out specific cells to form a '42' pattern in the center.
 
-        The pattern is centred in the maze.  If the maze is too small,
-        a warning is printed to stderr and the pattern is skipped.
-
-        The pattern cells' ``pattern`` flag is set to ``True`` and their
-        ``visited`` flag to ``True`` (so the solver ignores them).
-        Their ``walls`` value stays at 15 (all walls closed).
+        Calculates the center offset and marks specific cells as 'pattern' and
+        'visited' so they are ignored by generation and solving logic.
 
         Raises:
-            ValueError: If entry or exit would land inside the pattern.
+            ValueError: If the entry or exit positions fall within the pattern area.
         """
         if self.width < self.MIN_WIDTH_FOR_42 or self.height < self.MIN_HEIGHT_FOR_42:
             print("Warning: Maze too small to embed "
@@ -914,7 +903,12 @@ class MazeGenerator:
     # the logging concept
 
     def _log_event(self, action: str, **kwargs: Any) -> None:
-        """Record a single delta event."""
+        """Appends a generation step to the history log.
+
+        Args:
+            action (str): The type of action (e.g., "visit", "carve").
+            **kwargs: Additional data such as coordinates (cell, from, to).
+        """
         self.history.append({
             "step": len(self.history),
             "action": action,
@@ -922,6 +916,10 @@ class MazeGenerator:
         })
 
     def export_history(self, filepath: str = "history.json") -> None:
-        """Save the recorded events to a file."""
+        """Writes the generation history log to a JSON file.
+
+        Args:
+            filepath (str): Destination path for the JSON output.
+        """
         with open(filepath, 'w') as f:
             json.dump(self.history, f, indent=2)
