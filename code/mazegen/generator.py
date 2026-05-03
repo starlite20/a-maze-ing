@@ -173,6 +173,11 @@ class MazeGenerator:
             current.remove_wall(Direction.SOUTH)
             next_cell.remove_wall(Direction.NORTH)
 
+    def _randomize_seed(self) -> None:
+        if self.seed is None:
+            self.seed = random.randrange(2**32)
+        random.seed(self.seed)
+
     def generate_maze(self, algorithm: str = "DFS") -> None:
         self.create_grid()
 
@@ -184,7 +189,7 @@ class MazeGenerator:
         elif algorithm == "ELLER":
             self._generate_maze_eller()
         else:
-            pass
+            raise ValueError(f"Unknown algorithm: '{algorithm}'")
 
         if not self.perfect:
             self._generate_imperfections()
@@ -195,7 +200,7 @@ class MazeGenerator:
         start_cell.visited = True
         self._log_event("visit", cell=[start_cell.x, start_cell.y])
 
-        random.seed(self.seed)
+        self._randomize_seed()    
 
         stack = [start_cell]
         while (len(stack) > 0):
@@ -262,7 +267,8 @@ class MazeGenerator:
     # Eller's part
 
     def _generate_maze_eller(self) -> None:
-        random.seed(self.seed)
+        self._randomize_seed()
+        
         # row_sets tracks which set each cell belongs to in the current row
         row_sets: list[int | None] = list(range(self.width))
         next_set_id = self.width
@@ -278,16 +284,19 @@ class MazeGenerator:
                 # Merge if sets are different AND (random choice OR last row)
                 if row_sets[x] != row_sets[x+1]:
                     if is_last_row or random.choice([True, False]):
-                        # Avoid pattern cells to keep the "42" intact
                         if not (current_cell.pattern or next_cell.pattern):
-                            self._remove_walls(current_cell, next_cell)
-                            self._log_event(
-                                "carve", from_=[x, y], to=[x + 1, y])
-
-                            # unify the sets
-                            # all cells in the old set join the new set
                             old_set = row_sets[x+1]
                             new_set = row_sets[x]
+
+                            self._remove_walls(current_cell, next_cell)
+
+                            # verify no 3x3 was created
+                            if (self._is_3x3_open(x, y) or self._is_3x3_open(x + 1, y)):
+                                current_cell.walls |= int(Direction.EAST)
+                                next_cell.walls |= int(Direction.WEST)
+                                continue  # skip this merge
+
+                            self._log_event("carve", from_=[x, y], to=[x + 1, y])
                             for i in range(self.width):
                                 if row_sets[i] == old_set:
                                     row_sets[i] = new_set
@@ -393,21 +402,35 @@ class MazeGenerator:
                 # if wall doesnt exist, skip this iteration
                 continue
 
+            self._remove_walls(current_cell, neighbor_cell)
+
             # LARGE CORRIDOR CHECK
             # check 3x3 box centered on the CURRENT & NEIGHBOR
             if (self._is_3x3_open(random_cell_x, random_cell_y)
                     or self._is_3x3_open(neighbor_x, neighbor_y)):
+                # restore both sides of the wall
+                current_cell.walls |= int(direction)
+                opposite = {
+                    Direction.EAST: Direction.WEST,
+                    Direction.SOUTH: Direction.NORTH,
+                }
+                neighbor_cell.walls |= int(opposite[direction])
                 continue
-                # skip this iteration as this is a large corridor.
 
-            # all safe... remove walls
-            self._remove_walls(current_cell, neighbor_cell)
             removed_count += 1
 
     # =============================
     # Maze Solving Algorithm One - BFS
     # suitable for finding one path only... therefore, best for perfect maze.
     def solve_maze(self) -> str:
+        """Finds the shortest path from entry to exit using BFS.
+
+        Returns:
+            A string of directions representing the shortest path between entry and exit.
+
+        Raises:
+            ValueError: If the maze has not been generated yet.
+        """
         if not self.grid:
             raise ValueError("Maze not generated yet...")
 
@@ -521,7 +544,7 @@ class MazeGenerator:
     # =============================
     # the logging concept
 
-    def _log_event(self, action: str, **kwargs) -> None:
+    def _log_event(self, action: str, **kwargs: Any) -> None:
         """Record a single delta event."""
         self.history.append({
             "step": len(self.history),

@@ -47,27 +47,21 @@ class Configuration():
             exit_pos, "EXIT", self.WIDTH, self.HEIGHT)
 
     def split_coords(self, coord_str: str, field_name: str,
-                     width: int, height: int) -> tuple[int, int]:
+                 width: int, height: int) -> tuple[int, int]:
         try:
-            coord_x = int(coord_str.split(",")[0].strip())
-            coord_y = int(coord_str.split(",")[1].strip())
-            if (
-                coord_x < 0
-                or coord_y < 0
-                or coord_x >= width
-                or coord_y >= height
-            ):
-                raise ValueError(
-                    f"Coordinates for {field_name} must be "
-                    f"within maze dimensions (0 <= x < {width},"
-                    f" 0 <= y < {height}): {coord_str}"
-                )
-            return (coord_x, coord_y)
-        except (ValueError, TypeError):
+            parts = coord_str.split(",")
+            coord_x = int(parts[0].strip())
+            coord_y = int(parts[1].strip())
+        except (ValueError, TypeError, IndexError):
             raise ValueError(
-                f"Invalid coordinate format used for {field_name}:"
-                f" {coord_str}"
+                f"Invalid coordinate format for {field_name}: '{coord_str}'"
             )
+        if coord_x < 0 or coord_y < 0 or coord_x >= width or coord_y >= height:
+            raise ValueError(
+                f"{field_name} coordinates out of bounds "
+                f"(0 <= x < {width}, 0 <= y < {height}): '{coord_str}'"
+            )
+        return (coord_x, coord_y)
 
     def set_perfect(self, perfect: str) -> None:
         if perfect not in ["True", "False"]:

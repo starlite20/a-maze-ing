@@ -1,9 +1,9 @@
 WIDTH=15
 HEIGHT=15
-ENTRY=0,0
-EXIT=14,14
+ENTRY=10,10
+EXIT=10,11
 OUTPUT_FILE=output_maze.txt
-PERFECT=True
+PERFECT=False
 
 #optional parameters
 #===========================

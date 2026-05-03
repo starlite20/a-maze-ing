@@ -31,7 +31,8 @@ clean:
 
 lint:
 	$(PYTHON) -m flake8 .
-	$(PYTHON) -m mypy .
+	$(PYTHON) -m mypy . --warn-return-any --warn-unused-ignores \
+		--ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
 
 
 lint-strict:

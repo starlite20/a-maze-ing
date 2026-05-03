@@ -6,7 +6,7 @@
 
 [✅] mazegenerator class setup
 
-[🛠️] strict encapsulation concepts for data management
+[✅] strict encapsulation concepts for data management
 
 [✅] maze generation - algorithm 1
 [🛠️] maze generation - algorithm 2
@@ -24,12 +24,14 @@
 [🛠️] whl package creation
 [] package specific documentation
 
-[] animated working of the maze
+[✅] animated working of the maze
 
-[] documentation
-[] comparision of algorithms
-[] working explanation
+[] DOCSTRINGS!
 
-[] flake8
-[] mypy
-[] gitignore
+[🛠️] documentation
+[🛠️] comparision of algorithms
+[🛠️] working explanation
+
+[🛠️] flake8
+[🛠️] mypy
+[🛠️] gitignore

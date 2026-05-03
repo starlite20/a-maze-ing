@@ -55,23 +55,22 @@ def show_ascii_maze(
                 x -= 1
             path_coords.add((y, x))
 
-    # cell rendering
+
     def render_cell(row: int, col: int) -> str:
         cell = maze.grid[row][col]
 
-        # as we are animating the cells for generation
-        # we fill all unvisited cells with grey
         if not cell.visited and not cell.pattern:
             return paint("███", Color.GREY.value)
 
-        # current cell active will be marked with yellow
         if current_cell is not None and cell is current_cell:
             return paint("███", Color.YELLOW.value + Color.BOLD.value)
 
-        # fixed cells such as start & end point, path way, pattern
-        if (row, col) == maze.entry:
+        entry_y, entry_x = maze.entry[1], maze.entry[0]
+        exit_y, exit_x = maze.exit[1], maze.exit[0]
+
+        if (row, col) == (entry_y, entry_x):
             return paint("███", entry_color + Color.BOLD.value)
-        if (row, col) == maze.exit:
+        if (row, col) == (exit_y, exit_x):
             return paint("███", exit_color + Color.BOLD.value)
         if (row, col) in path_coords:
             return paint("███", path_color + Color.BOLD.value)
@@ -130,7 +129,7 @@ def show_ascii_maze(
         else:
             # check if the path through the bottom
             if ((maze.height - 1, col) in path_coords
-                    and (maze.height, col) in path_coords):
+                    and (maze.height - 1, col) in path_coords):
                 line += paint("███", path_color + Color.BOLD.value)
             else:
                 line += SPACE * 3
