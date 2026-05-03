@@ -31,6 +31,10 @@ clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	@echo "Cleaned up temporary files."
 
+fclean: clean
+	rm -rf $(VENV)
+	@echo "Removed virtual environment."
+
 lint: install
 	$(VENV_PYTHON) -m flake8 .
 	$(VENV_PYTHON) -m mypy . --warn-return-any --warn-unused-ignores \
@@ -43,4 +47,4 @@ lint-strict: install
 package:
 	$(VENV_PYTHON) -m build
 
-.PHONY: all venv install run debug clean lint lint-strict package
+.PHONY: all venv install run debug clean fclean lint lint-strict package
