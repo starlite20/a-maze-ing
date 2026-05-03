@@ -1,48 +1,46 @@
 PYTHON = python3
 PIP = pip3
+PACKAGE_DIR = .
+VENV = .venv
+VENV_PYTHON = $(VENV)/bin/$(PYTHON)
+VENV_PIP = $(VENV)/bin/pip
 MAIN = a_maze_ing.py
 CONFIG = config.txt
-PACKAGE_DIR = .
-VENV = venv
-BIN = $(VENV)/bin
 
 
-all: install lint
+all: install
 
-install:
-	$(PIP) install --upgrade pip
-	$(PIP) install flake8 mypy
-	
+venv:
+	$(PYTHON) -m venv $(VENV)
+
+install: venv
+	$(VENV_PIP) install --upgrade pip
+	$(VENV_PIP) install flake8 mypy build
+# 	$(VENV_PIP) install -r requirements.txt
+	@echo "Dependencies installed in $(VENV)."
+
 run:
-	$(PYTHON) $(MAIN) $(CONFIG)
-
+	$(VENV_PYTHON) $(MAIN) $(CONFIG)
 
 debug:
-	$(PYTHON) -m pdb $(MAIN) $(CONFIG)
+	$(VENV_PYTHON) -m pdb $(MAIN) $(CONFIG)
 
 clean:
-	rm -rf __pycache__
-	rm -rf output_maze.txt
-	rm -rf history.json
-	rm -rf .mypy_cache
-	rm -rf .pytest_cache
-	rm -rf build dist *.egg-info
+	rm -rf .mypy_cache .pytest_cache build dist *.egg-info
+	rm -f output_maze.txt history.json
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	@echo "Cleaned up temporary files."
 
-
-lint:
-	$(PYTHON) -m flake8 .
-	$(PYTHON) -m mypy . --warn-return-any --warn-unused-ignores \
+lint: install
+	$(VENV_PYTHON) -m flake8 .
+	$(VENV_PYTHON) -m mypy . --warn-return-any --warn-unused-ignores \
 		--ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
 
-
-lint-strict:
-	$(PYTHON) -m flake8 .
-	$(PYTHON) -m mypy . --strict
-
+lint-strict: install
+	$(VENV_PYTHON) -m flake8 .
+	$(VENV_PYTHON) -m mypy . --strict
 
 package:
-	$(PYTHON) -m build
+	$(VENV_PYTHON) -m build
 
-.PHONY: all install run debug clean lint lint-strict package
+.PHONY: all venv install run debug clean lint lint-strict package
