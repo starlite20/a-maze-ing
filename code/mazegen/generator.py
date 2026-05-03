@@ -1,29 +1,3 @@
-"""
-maze_generator.py — Enhanced Maze Generator using Eller's Algorithm.
-
-Design:
-  - Eller's builds the maze row-by-row using a disjoint-set (union-find) on
-    cell group IDs.  Each row performs two passes:
-      1. Horizontal merge  – randomly merge adjacent cells in different sets
-         (on the last row, ALL different sets are force-merged for full
-         connectivity).
-      2. Vertical carve    – for every set, guarantee ≥ 1 south opening so
-         no set is stranded without a downward connection.
-  - '42' pattern cells are marked BEFORE generation.  They are treated as
-    permanent walls and skipped during both Eller passes.
-  - Because pattern cells can split a set into disconnected sub-regions
-    (e.g. a set whose only vertical-exit column is a pattern cell), a
-    post-generation ``_connect_components`` pass uses BFS to detect isolated
-    non-pattern components and punches the minimum number of walls to join
-    them, guaranteeing full connectivity.
-  - Imperfect mode adds random wall removals while checking the
-    ``_is_3x3_open`` constraint via the centre-cell heuristic from the
-    original code (which correctly rejects moves that would widen a corridor
-    beyond 2 cells).
-  - All mutations go through ``_remove_walls`` so shared-wall coherence is
-    always maintained (no cell can have an east wall while its east neighbour
-    lacks a west wall).
-"""
 from __future__ import annotations
 
 from enum import IntFlag
