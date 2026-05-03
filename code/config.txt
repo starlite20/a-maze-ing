@@ -1,17 +1,17 @@
 WIDTH=15
 HEIGHT=15
-ENTRY=10,10
+ENTRY=1,10
 EXIT=10,11
 OUTPUT_FILE=output_maze.txt
-PERFECT=False
+PERFECT=True
 
 #optional parameters
 #===========================
 #seed for randomness
-# SEED=5
+#SEED=4101875987
 
 # algorithm for maze creation
-ALGORITHM=ELLER
+ALGORITHM=DFS
 
 #embed 42 pattern
 PATTERN_42=True

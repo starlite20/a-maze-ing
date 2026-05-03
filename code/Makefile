@@ -22,6 +22,8 @@ debug:
 
 clean:
 	rm -rf __pycache__
+	rm -rf output_maze.txt
+	rm -rf history.json
 	rm -rf .mypy_cache
 	rm -rf .pytest_cache
 	rm -rf build dist *.egg-info

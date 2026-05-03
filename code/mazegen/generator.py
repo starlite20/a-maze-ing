@@ -1,12 +1,50 @@
+"""
+maze_generator.py — Enhanced Maze Generator using Eller's Algorithm.
+
+Design:
+  - Eller's builds the maze row-by-row using a disjoint-set (union-find) on
+    cell group IDs.  Each row performs two passes:
+      1. Horizontal merge  – randomly merge adjacent cells in different sets
+         (on the last row, ALL different sets are force-merged for full
+         connectivity).
+      2. Vertical carve    – for every set, guarantee ≥ 1 south opening so
+         no set is stranded without a downward connection.
+  - '42' pattern cells are marked BEFORE generation.  They are treated as
+    permanent walls and skipped during both Eller passes.
+  - Because pattern cells can split a set into disconnected sub-regions
+    (e.g. a set whose only vertical-exit column is a pattern cell), a
+    post-generation ``_connect_components`` pass uses BFS to detect isolated
+    non-pattern components and punches the minimum number of walls to join
+    them, guaranteeing full connectivity.
+  - Imperfect mode adds random wall removals while checking the
+    ``_is_3x3_open`` constraint via the centre-cell heuristic from the
+    original code (which correctly rejects moves that would widen a corridor
+    beyond 2 cells).
+  - All mutations go through ``_remove_walls`` so shared-wall coherence is
+    always maintained (no cell can have an east wall while its east neighbour
+    lacks a west wall).
+"""
+from __future__ import annotations
+
 from enum import IntFlag
 from dataclasses import dataclass
 import random
 import json
 from collections import deque
-from typing import Any
+from typing import Any, Optional
+
 
 
 class Direction(IntFlag):
+    """Wall Direction based bitmask.
+
+    Each bit encodes one wall of a cell:
+      bit 0 (1)  = North
+      bit 1 (2)  = East
+      bit 2 (4)  = South
+      bit 3 (8)  = West
+    A set bit means the wall is closed or present.
+    """
     NORTH = 1
     EAST = 2
     SOUTH = 4
@@ -15,6 +53,16 @@ class Direction(IntFlag):
 
 @dataclass
 class Cell:
+    """A single maze cell.
+
+    Attributes:
+        x: Column index (0-based).
+        y: Row index (0-based).
+        walls: Bitmask of closed walls (all 4 closed = 15).
+        visited: Flag to keep track of visited cells.
+        pattern: Flag to specify if this cell is part of a pattern.
+    """
+
     x: int
     y: int
     walls: int = 15
@@ -22,18 +70,75 @@ class Cell:
     pattern: bool = False
 
     def get_position(self) -> tuple[int, int]:
+        """Return ``(x, y)`` tuple."""
         return (self.x, self.y)
 
     def remove_wall(self, direction: Direction) -> None:
-        self.walls &= ~direction
+        """Remove a wall in the given direction.
+
+        Args:
+            direction: The wall to remove.
+        """
+        self.walls &= ~int(direction)
 
 
 class MazeGenerator:
+    """Generate a maze using Eller's row-by-row algorithm.
+
+    Usage::
+
+        gen = MazeGenerator(
+            width=20, height=15,
+            entry_pos=(0, 0), exit_pos=(19, 14),
+            perfect=True, seed=42,
+            pattern_42=True,
+        )
+        gen.generate_maze(algorithm="ELLER")
+        path = gen.solve_maze()   # e.g. "NNEESSWW"
+        gen.print_grid()
+
+    Args:
+        width: Number of columns (≥ 2).
+        height: Number of rows (≥ 2).
+        entry_pos: ``(x, y)`` of the entrance cell.
+        exit_pos: ``(x, y)`` of the exit cell.
+        perfect: If ``True``, generate a perfect maze (spanning tree, no
+                 cycles).  If ``False``, add random extra openings.
+        seed: RNG seed for reproducibility.  ``None`` or ≤ 0 picks a random
+              seed automatically.
+        pattern_42: If ``True``, embed the '42' pattern as fully-closed cells
+                    in the centre of the maze.
+    """
+
+    # 42 Pattern Map where '1' = fully-closed pattern cell, '0' = open cell.
+    _PATTERN_42_MAP: list[str] = [
+        "1000111",
+        "1000001",
+        "1110111",
+        "0010100",
+        "0010111",
+    ]
+
+    _PATTERN_WIDTH: int = len(_PATTERN_42_MAP[0])
+    _PATTERN_HEIGHT: int = len(_PATTERN_42_MAP)
+
+    # Minimum maze size to accommodate the pattern with a 2-cell margin all around
+    MIN_WIDTH_FOR_42: int = _PATTERN_WIDTH + 4
+    MIN_HEIGHT_FOR_42: int = _PATTERN_HEIGHT + 4
+
+    _NEIGHBOURS: list[tuple[Direction, int, int]] = [
+        (Direction.NORTH, 0, -1),
+        (Direction.EAST, 1, 0),
+        (Direction.SOUTH, 0, 1),
+        (Direction.WEST, -1, 0),
+    ]
+
     def __init__(
         self, width: int, height: int,
         entry_pos: tuple[int, int], exit_pos: tuple[int, int],
         perfect: bool, seed: int | None, pattern_42: bool = False
     ) -> None:
+        """Validate parameters and initialise state."""
         self.set_width(width)
         self.set_height(height)
         self.set_entry_exit_pos(entry_pos, exit_pos)
@@ -43,23 +148,49 @@ class MazeGenerator:
         self.grid: list[list[Cell]] = []
         self.history: list[dict[str, Any]] = []
 
-    # =============================
-    # custom validators
     def set_width(self, width: int) -> None:
+        """Set and validate maze width.
+
+        Args:
+            width: Must be an integer ≥ 2.
+
+        Raises:
+            ValueError: If validation fails.
+        """
         if not isinstance(width, int) or width < 2:
             raise ValueError(f"Width must be an integer >= 2. Got: {width}")
-        self.width = width
+        self.width: int = width
 
     def set_height(self, height: int) -> None:
+        """Set and validate maze height.
+
+        Args:
+            height: Must be an integer ≥ 2.
+
+        Raises:
+            ValueError: If validation fails.
+        """
         if not isinstance(height, int) or height < 2:
             raise ValueError(f"Height must be an integer >= 2. Got: {height}")
-        self.height = height
+        self.height: int = height
 
     def _is_valid_coord(self,
                         coord: tuple[int, int],
                         name: str) -> None:
-        if not (isinstance(coord, tuple) and len(coord) == 2 and
-                all(isinstance(i, int) for i in coord)):
+        """Validate that *coord* is a tuple of two ints inside maze bounds.
+
+        Args:
+            coord: The coordinate to validate.
+            name: Human-readable label for error messages.
+
+        Raises:
+            ValueError: If validation fails.
+        """
+        if (
+            not isinstance(coord, tuple)
+            or len(coord) != 2
+            or not all(isinstance(i, int) for i in coord)
+        ):
             raise ValueError(
                 f"{name} must be a tuple of two integers. Got: {coord}")
         x, y = coord
@@ -71,40 +202,90 @@ class MazeGenerator:
                            entry_pos: tuple[int, int],
                            exit_pos: tuple[int, int]
                            ) -> None:
+        """Set and validate entry and exit positions.
+
+        Args:
+            entry_pos: ``(x, y)`` of the entrance — must be inside bounds.
+            exit_pos: ``(x, y)`` of the exit — must differ from entry.
+
+        Raises:
+            ValueError: If any constraint is violated.
+        """
         self._is_valid_coord(entry_pos, "Entry")
         self._is_valid_coord(exit_pos, "Exit")
 
         if entry_pos == exit_pos:
             raise ValueError("Entry and Exit coordinates must be different.")
 
-        self.entry = entry_pos
-        self.exit = exit_pos
+        self.entry: tuple[int, int] = entry_pos
+        self.exit: tuple[int, int] = exit_pos
 
     def set_perfect(self, perfect: bool) -> None:
+        """Set the perfect-maze flag.
+
+        Args:
+            perfect: ``True`` for a spanning-tree maze with no cycles.
+
+        Raises:
+            ValueError: If not a bool.
+        """
         if not isinstance(perfect, bool):
             raise ValueError(
                 f"Perfect must be a boolean. Got: {type(perfect)}"
             )
-        self.perfect = perfect
+        self.perfect: bool = perfect
 
     def set_seed(self, seed: int | None) -> None:
+        """Set the Randomness seed value.
+
+        Args:
+            seed: Integer seed for reproducibility.  Pass ``None`` to have
+                  the seed chosen automatically at generation time.
+
+        Raises:
+            ValueError: If not an int or None.
+        """
         if seed is not None and not isinstance(seed, int):
             raise ValueError(
                 f"Seed must be an integer or None. Got: {type(seed)}"
             )
-        self.seed = seed
+        self.seed: int | None = seed
+
+    def _randomize_seed(self) -> None:
+        """Assign a random seed if none was provided.
+
+        Calling this at the start of each generation method ensures that
+        ``self.seed`` is always an ``int`` after the call, making the run
+        reproducible even when the caller passed ``None``.
+        """
+        if self.seed is None:
+            self.seed = random.randrange(2 ** 32)
+        random.seed(self.seed)
 
     def set_pattern_42(self, embed_pattern: bool = False) -> None:
+        """Enable or disable embedding of the '42' pattern.
+
+        Args:
+            embed_pattern: ``True`` to embed the pattern.
+
+        Raises:
+            ValueError: If not a bool.
+        """
         if not isinstance(embed_pattern, bool):
             raise ValueError(
                 f"Perfect must be a boolean. Got: {type(embed_pattern)}"
             )
-        self.embed_pattern = embed_pattern
+        self.embed_pattern: bool = embed_pattern
 
     # =============================
     # maze generation
 
     def create_grid(self) -> None:
+        """Allocate the grid as a 2-D list of fresh ``Cell`` objects.
+
+        All cells start with ``walls = 15`` (all four walls closed) and
+        ``pattern = False``.
+        """
         self.grid = []
         for y in range(self.height):
             row = []
@@ -116,6 +297,7 @@ class MazeGenerator:
             self.grid.append(row)
 
     def print_grid(self) -> None:
+        """Print grid to stdout in hex format (one row per line)."""
         for row in self.grid:
             print("".join([f"{cell.walls:X}" for cell in row]))
 
@@ -149,7 +331,16 @@ class MazeGenerator:
         return neighbours
 
     def _remove_walls(self, current: Cell, next_cell: Cell) -> None:
-        # calculate the difference in position to find direction
+        """Remove the shared wall between *current* and *next_cell*.
+
+        Works out the direction automatically from the cells' coordinates and
+        updates **both** cells so the shared wall is always coherent (if one
+        cell has an open east, its east neighbour has an open west).
+
+        Args:
+            current: The source cell.
+            next_cell: The destination cell (must be a direct neighbour).
+        """
         dx = current.x - next_cell.x
         dy = current.y - next_cell.y
 
@@ -173,29 +364,56 @@ class MazeGenerator:
             current.remove_wall(Direction.SOUTH)
             next_cell.remove_wall(Direction.NORTH)
 
-    def _randomize_seed(self) -> None:
-        if self.seed is None:
-            self.seed = random.randrange(2**32)
-        random.seed(self.seed)
-
     def generate_maze(self, algorithm: str = "DFS") -> None:
+        """Generate the maze using the specified algorithm.
+
+        Supported algorithms: ``"ELLER"``, ``"DFS"``.
+
+        After generation:
+        - If ``pattern_42`` was requested and the maze is large enough, the
+          '42' pattern is visible as a cluster of fully-closed cells.
+        - Full connectivity of all non-pattern cells is guaranteed.
+        - No 3×3 open area exists.
+        - If ``perfect=False``, a small percentage of extra walls are removed
+          to introduce cycles (while still respecting the 3×3 constraint).
+
+        Args:
+            algorithm: Algorithm identifier (case-insensitive).
+        """
         self.create_grid()
 
         if self.embed_pattern:
-            self.embed_42_pattern()
+            self._embed_42_pattern()
 
-        if algorithm == "DFS":
-            self._generate_maze_DFS()
-        elif algorithm == "ELLER":
+        alg = algorithm.upper()
+
+        if alg == "DFS":
+            self._generate_maze_dfs()
+        elif alg == "ELLER":
             self._generate_maze_eller()
         else:
             raise ValueError(f"Unknown algorithm: '{algorithm}'")
 
+        self._connect_components()
+
         if not self.perfect:
             self._generate_imperfections()
+        
+        # Mark all non-pattern cells as visited
+        for row in self.grid:
+            for cell in row:
+                if not cell.pattern:
+                    cell.visited = True
         pass
 
-    def _generate_maze_DFS(self) -> None:
+    def _generate_maze_dfs(self) -> None:
+        """Generate a perfect maze using recursive-backtracker (DFS).
+
+        Uses an explicit stack to avoid Python recursion limits.
+
+        Args:
+            None — uses ``self.entry`` as the start cell.
+        """
         start_cell = self.grid[self.entry[1]][self.entry[0]]
         start_cell.visited = True
         self._log_event("visit", cell=[start_cell.x, start_cell.y])
@@ -222,7 +440,116 @@ class MazeGenerator:
                 if active:
                     self._log_event("backtrack", to=[active.x, active.y])
 
+    def _generate_maze_eller(self) -> None:
+        self._randomize_seed()
+
+        row_sets: list[int] = list(range(self.width))
+        next_set_id: int = self.width
+
+        for y in range(self.height):
+            is_last_row: bool = (y == self.height - 1)
+
+            # visit all cells in this row at the start of processing
+            for x in range(self.width):
+                cell = self.grid[y][x]
+                if not cell.visited and not cell.pattern:
+                    cell.visited = True
+                    self._log_event("visit", cell=[x, y])
+
+            # horizontal merge
+            for x in range(self.width - 1):
+                left = self.grid[y][x]
+                right = self.grid[y][x + 1]
+
+                if left.pattern or right.pattern:
+                    continue
+
+                if row_sets[x] == row_sets[x + 1]:
+                    continue
+
+                should_merge = is_last_row or random.choice([True, False])
+                if should_merge:
+                    self._remove_walls(left, right)
+
+                    if (
+                        self._is_3x3_open(x, y)
+                        or self._is_3x3_open(x + 1, y)
+                    ):
+                        left.walls |= int(Direction.EAST)
+                        right.walls |= int(Direction.WEST)
+                        continue
+
+                    self._log_event("carve", from_=[x, y], to=[x + 1, y])
+
+                    old_id = row_sets[x + 1]
+                    new_id = row_sets[x]
+                    for i in range(self.width):
+                        if row_sets[i] == old_id:
+                            row_sets[i] = new_id
+
+            # vertical carve except for last row)
+            if is_last_row:
+                continue
+
+            sets_in_row: dict[int, list[int]] = {}
+            for x in range(self.width):
+                sets_in_row.setdefault(row_sets[x], []).append(x)
+
+            next_row_sets: list[int] = [
+                next_set_id + i for i in range(self.width)
+            ]
+            next_set_id += self.width
+
+            for s_id, columns in sets_in_row.items():
+                valid_cols: list[int] = [
+                    x for x in columns
+                    if not self.grid[y][x].pattern
+                    and not self.grid[y + 1][x].pattern
+                ]
+
+                if not valid_cols:
+                    continue
+
+                random.shuffle(valid_cols)
+
+                # guaranteed south opening
+                mandatory = valid_cols[0]
+                self._remove_walls(
+                    self.grid[y][mandatory],
+                    self.grid[y + 1][mandatory],
+                )
+                self._log_event("carve", from_=[mandatory, y], to=[mandatory, y + 1])
+                next_row_sets[mandatory] = s_id
+
+                # optional extra south openings
+                for x in valid_cols[1:]:
+                    if random.choice([True, False]):
+                        self._remove_walls(
+                            self.grid[y][x], self.grid[y + 1][x]
+                        )
+                        self._log_event("carve", from_=[x, y], to=[x, y + 1])
+                        next_row_sets[x] = s_id
+
+            row_sets = next_row_sets
+    
+
     def _is_3x3_open(self, col: int, row: int) -> bool:
+        """Return ``True`` if the 3×3 block centred on ``(cx, cy)`` is open.
+
+        "Fully open" means no internal east or south walls exist within the
+        3×3 grid (i.e. all 9 cells are mutually passable horizontally and
+        vertically, forming a corridor wider than 2 cells).
+
+        Cells on the maze border cannot be the centre of a valid 3×3 block,
+        so those return ``False`` immediately.
+
+        Args:
+            cx: Column of the centre cell.
+            cy: Row of the centre cell.
+
+        Returns:
+            ``True`` if removing a wall here would create a 3×3 open area.
+        """
         min_x = col - 1
         max_x = col + 1
         min_y = row - 1
@@ -264,105 +591,141 @@ class MazeGenerator:
                     return True
         return False
 
-    # Eller's part
+    def _connect_components(self) -> None:
+        """Ensure all non-pattern cells form a single connected component.
 
-    def _generate_maze_eller(self) -> None:
-        self._randomize_seed()
+        Why this is needed
+        ------------------
+        Pattern cells can fully block all vertical exits of a set during
+        Eller's Pass 2.  When that happens, the cells *below* the pattern
+        block receive fresh isolated set IDs with no upward link.
 
-        # row_sets tracks which set each cell belongs to in the current row
-        row_sets: list[int | None] = list(range(self.width))
-        next_set_id = self.width
+        This method detects such isolated regions via BFS and punches the
+        minimum number of walls to merge them into the main component.  Wall
+        removal always goes through ``_remove_walls`` so coherence is kept.
 
-        for y in range(self.height):
-            is_last_row = (y == self.height - 1)
+        The approach
+        ------------
+        1. BFS from entry — mark reachable component as "main".
+        2. Scan grid for any unvisited non-pattern cell.
+        3. BFS from that cell to label its component.
+        4. Scan the border of that component for a cell that is wall-adjacent
+           to the main component, and break that wall.
+        5. Repeat until all cells are reachable.
+        """
 
-            # --- STEP 1: Horizontal Merging ---
-            for x in range(self.width - 1):
-                current_cell = self.grid[y][x]
-                next_cell = self.grid[y][x + 1]
+        max_passes = self.width * self.height
 
-                # Merge if sets are different AND (random choice OR last row)
-                if row_sets[x] != row_sets[x+1]:
-                    if is_last_row or random.choice([True, False]):
-                        if not (current_cell.pattern or next_cell.pattern):
-                            old_set = row_sets[x+1]
-                            new_set = row_sets[x]
+        for _ in range(max_passes):
+            reachable = self._bfs_reachable(self.entry[0], self.entry[1])
 
-                            self._remove_walls(current_cell, next_cell)
+            # check total non-pattern cell count
+            all_cells: list[tuple[int, int]] = [
+                (x, y)
+                for y in range(self.height)
+                for x in range(self.width)
+                if not self.grid[y][x].pattern
+            ]
+            if len(reachable) == len(all_cells):
+                # indicates all cells are reacheable and connected
+                break
 
-                            # verify no 3x3 was created
-                            if ((self._is_3x3_open(x, y)
-                                 or self._is_3x3_open(x + 1, y))):
-                                current_cell.walls |= int(Direction.EAST)
-                                next_cell.walls |= int(Direction.WEST)
-                                continue  # skip this merge
+            # find one isolated cell
+            isolated_start: Optional[tuple[int, int]] = None
+            for (x, y) in all_cells:
+                if (x, y) not in reachable:
+                    isolated_start = (x, y)
+                    break
 
-                            self._log_event(
-                                "carve", from_=[x, y], to=[x + 1, y])
-                            for i in range(self.width):
-                                if row_sets[i] == old_set:
-                                    row_sets[i] = new_set
+            if isolated_start is None:
+                break
 
-            # --- STEP 2: Vertical Merging ---
-            if not is_last_row:
-                next_row_sets: list[int | None] = [None] * self.width
+            # BFS to label the entire isolated component
+            iso_x, iso_y = isolated_start
+            iso_component: set[tuple[int, int]] = set()
+            queue: deque[tuple[int, int]] = deque([(iso_x, iso_y)])
+            iso_component.add((iso_x, iso_y))
+            while queue:
+                cx, cy = queue.popleft()
+                for d, dx, dy in self._NEIGHBOURS:
+                    nx, ny = cx + dx, cy + dy
+                    if (
+                        0 <= nx < self.width
+                        and 0 <= ny < self.height
+                        and (nx, ny) not in iso_component
+                        and not self.grid[ny][nx].pattern
+                        and not (self.grid[cy][cx].walls & int(d))
+                    ):
+                        iso_component.add((nx, ny))
+                        queue.append((nx, ny))
 
-                # Group cell indices by their set ID
-                sets_in_row: dict[int, list[int]] = {}
-                for x in range(self.width):
-                    s = row_sets[x]
-                    if s is None:
-                        continue  # Type guard to satisfy mypy
-                    if s not in sets_in_row:
-                        sets_in_row[s] = []
-                    sets_in_row[s].append(x)
+            # find a wall between the isolated component and main component
+            # prefer openings that do NOT widen a 3×3 area.
+            punched = False
+            for (cx, cy) in iso_component:
+                if punched:
+                    break
+                for d, dx, dy in self._NEIGHBOURS:
+                    nx, ny = cx + dx, cy + dy
+                    if (
+                        0 <= nx < self.width
+                        and 0 <= ny < self.height
+                        and not self.grid[ny][nx].pattern
+                        and (nx, ny) in reachable
+                    ):
+                        self._remove_walls(
+                            self.grid[cy][cx], self.grid[ny][nx]
+                        )
+                        punched = True
+                        break
 
-                for s, indices in sets_in_row.items():
-                    # filter valid cells (No pattern in current or south)
-                    valid_indices = [
-                        x for x in indices
-                        if (not (self.grid[y][x].pattern
-                                 or self.grid[y+1][x].pattern))
-                    ]
-
-                    # STEP 2: If empty, this set is pattern-blocked; skip it
-                    if not valid_indices:
-                        continue
-
-                    # STEP 3: Guarantee at least one drop, then random the rest
-                    random.shuffle(valid_indices)
-
-                    # 3a: The Guarantee (First cell always drops)
-                    first_x = valid_indices[0]
-                    self._remove_walls(
-                        self.grid[y][first_x], self.grid[y+1][first_x])
-                    next_row_sets[first_x] = s
-                    self._log_event(
-                        "carve", from_=[first_x, y], to=[first_x, y + 1])
-
-                    # 3b: The Random (50% chance for additional drops)
-                    for i in range(1, len(valid_indices)):
-                        if random.choice([True, False]):
-                            rand_x = valid_indices[i]
+            if not punched:
+                # fallback if unable to remove ignoring 3×3 constraint
+                for (cx, cy) in iso_component:
+                    if punched:
+                        break
+                    for d, dx, dy in self._NEIGHBOURS:
+                        nx, ny = cx + dx, cy + dy
+                        if (
+                            0 <= nx < self.width
+                            and 0 <= ny < self.height
+                            and not self.grid[ny][nx].pattern
+                        ):
                             self._remove_walls(
-                                self.grid[y][rand_x], self.grid[y+1][rand_x])
-                            next_row_sets[rand_x] = s
-                            self._log_event(
-                                "carve", from_=[rand_x, y], to=[rand_x, y + 1])
+                                self.grid[cy][cx], self.grid[ny][nx]
+                            )
+                            punched = True
+                            break
 
-                # --- STEP 3: Next Row Preparation ---
-                for x in range(self.width):
-                    if next_row_sets[x] is None:
-                        # cell didn't get a vertical drop
-                        # assign a brand new Set ID
-                        next_row_sets[x] = next_set_id
-                        next_set_id += 1
-                row_sets = next_row_sets
+    def _bfs_reachable(
+        self, start_x: int, start_y: int
+    ) -> set[tuple[int, int]]:
+        """Return all non-pattern cells reachable from ``(start_x, start_y)``.
 
-        # Post-generation: Mark all as visited so the Solver can work
-        for row in self.grid:
-            for cell in row:
-                cell.visited = True
+        Args:
+            start_x: Column of the starting cell.
+            start_y: Row of the starting cell.
+
+        Returns:
+            Set of ``(x, y)`` tuples reachable without crossing pattern cells.
+        """
+        visited: set[tuple[int, int]] = set()
+        queue: deque[tuple[int, int]] = deque([(start_x, start_y)])
+        visited.add((start_x, start_y))
+        while queue:
+            cx, cy = queue.popleft()
+            for d, dx, dy in self._NEIGHBOURS:
+                nx, ny = cx + dx, cy + dy
+                if (
+                    0 <= nx < self.width
+                    and 0 <= ny < self.height
+                    and (nx, ny) not in visited
+                    and not self.grid[ny][nx].pattern
+                    and not (self.grid[cy][cx].walls & int(d))
+                ):
+                    visited.add((nx, ny))
+                    queue.append((nx, ny))
+        return visited
 
     def _generate_imperfections(self) -> None:
         # consider only n-1 rows and columns. ignoring the last.
@@ -435,7 +798,9 @@ class MazeGenerator:
             ValueError: If the maze has not been generated yet.
         """
         if not self.grid:
-            raise ValueError("Maze not generated yet...")
+            raise ValueError(
+                "Maze not generated yet. Call generate_maze() first."
+            )
 
         start_x, start_y = self.entry
         end_x, end_y = self.exit
@@ -501,30 +866,31 @@ class MazeGenerator:
     # =============================
     # 42 Pattern Embedding
 
-    def embed_42_pattern(self) -> None:
-        pattern_map = [
-            "1000111",
-            "1000001",
-            "1110111",
-            "0010100",
-            "0010111"
-        ]
+    def _embed_42_pattern(self) -> None:
+        """Mark cells that form the '42' pattern as permanently closed.
 
-        pattern_width = len(pattern_map[0])
-        pattern_height = len(pattern_map)
+        The pattern is centred in the maze.  If the maze is too small,
+        a warning is printed to stderr and the pattern is skipped.
 
-        if self.width < pattern_width or self.height < pattern_height:
+        The pattern cells' ``pattern`` flag is set to ``True`` and their
+        ``visited`` flag to ``True`` (so the solver ignores them).
+        Their ``walls`` value stays at 15 (all walls closed).
+
+        Raises:
+            ValueError: If entry or exit would land inside the pattern.
+        """
+        if self.width < self.MIN_WIDTH_FOR_42 or self.height < self.MIN_HEIGHT_FOR_42:
             print("Warning: Maze too small to embed "
                   "'42' pattern. Omitting pattern.")
             self.embed_pattern = False
             return
 
-        pattern_start_x = (self.width // 2) - (pattern_width // 2)
-        pattern_start_y = (self.height // 2) - (pattern_height // 2)
+        pattern_start_x = (self.width // 2) - (self._PATTERN_WIDTH // 2)
+        pattern_start_y = (self.height // 2) - (self._PATTERN_HEIGHT // 2)
 
-        blocked_coords = []
+        blocked_coords: list[tuple[int, int]] = []
 
-        for y_offset, row in enumerate(pattern_map):
+        for y_offset, row in enumerate(self._PATTERN_42_MAP):
             for x_offset, point in enumerate(row):
                 if point == "1":
                     blocked_coords.append(
