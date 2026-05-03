@@ -45,7 +45,9 @@ def generate_and_solve(config: Configuration) -> tuple[MazeGenerator, str]:
 def run_amazing(config: Configuration) -> None:
     maze, solution = generate_and_solve(config)
 
-    active_seed = maze.seed if maze.seed is not None else "random (no seed set)"
+    active_seed: int | str = "random (no seed set)"
+    if maze.seed is not None:
+        active_seed = maze.seed
 
     show_path = False
     color_mode = 0
@@ -53,16 +55,17 @@ def run_amazing(config: Configuration) -> None:
     while True:
         clear_screen()
         display_maze(maze, color_mode, show_path, solution)
-        print(f"=> Randomness Seed : {active_seed}") 
+        print(f"=> Randomness Seed : {active_seed}")
         print(
             "\n\n1. Regenerate\n2. Show/Hide Path\n3. Rotate Colors\n"
             "4. Write Output & Quit\n5. Animate Maze Generation\n"
-            )
+        )
 
         choice = input("Choice? ").strip()
         if choice == '1':
             maze, solution = generate_and_solve(config)
-            active_seed = maze.seed if maze.seed is not None else "random (no seed set)"
+            if maze.seed is not None:
+                active_seed = maze.seed
             show_path = False
         elif choice == '2':
             show_path = not show_path

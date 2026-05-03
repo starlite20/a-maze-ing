@@ -200,7 +200,7 @@ class MazeGenerator:
         start_cell.visited = True
         self._log_event("visit", cell=[start_cell.x, start_cell.y])
 
-        self._randomize_seed()    
+        self._randomize_seed()
 
         stack = [start_cell]
         while (len(stack) > 0):
@@ -268,7 +268,7 @@ class MazeGenerator:
 
     def _generate_maze_eller(self) -> None:
         self._randomize_seed()
-        
+
         # row_sets tracks which set each cell belongs to in the current row
         row_sets: list[int | None] = list(range(self.width))
         next_set_id = self.width
@@ -291,12 +291,14 @@ class MazeGenerator:
                             self._remove_walls(current_cell, next_cell)
 
                             # verify no 3x3 was created
-                            if (self._is_3x3_open(x, y) or self._is_3x3_open(x + 1, y)):
+                            if ((self._is_3x3_open(x, y)
+                                 or self._is_3x3_open(x + 1, y))):
                                 current_cell.walls |= int(Direction.EAST)
                                 next_cell.walls |= int(Direction.WEST)
                                 continue  # skip this merge
 
-                            self._log_event("carve", from_=[x, y], to=[x + 1, y])
+                            self._log_event(
+                                "carve", from_=[x, y], to=[x + 1, y])
                             for i in range(self.width):
                                 if row_sets[i] == old_set:
                                     row_sets[i] = new_set
@@ -426,7 +428,8 @@ class MazeGenerator:
         """Finds the shortest path from entry to exit using BFS.
 
         Returns:
-            A string of directions representing the shortest path between entry and exit.
+            A string of directions representing the
+            shortest path between entry and exit.
 
         Raises:
             ValueError: If the maze has not been generated yet.

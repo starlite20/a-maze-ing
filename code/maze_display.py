@@ -55,7 +55,6 @@ def show_ascii_maze(
                 x -= 1
             path_coords.add((y, x))
 
-
     def render_cell(row: int, col: int) -> str:
         cell = maze.grid[row][col]
 

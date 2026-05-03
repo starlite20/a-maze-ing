@@ -47,7 +47,7 @@ class Configuration():
             exit_pos, "EXIT", self.WIDTH, self.HEIGHT)
 
     def split_coords(self, coord_str: str, field_name: str,
-                 width: int, height: int) -> tuple[int, int]:
+                     width: int, height: int) -> tuple[int, int]:
         try:
             parts = coord_str.split(",")
             coord_x = int(parts[0].strip())
