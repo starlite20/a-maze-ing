@@ -8,12 +8,23 @@ from maze_display import display_maze, Color
 
 
 def clear_screen() -> None:
+    """Clears the terminal screen based on the operating system."""
     os.system('cls' if os.name == 'nt' else 'clear')
 
 
 def write_output_file(maze: MazeGenerator,
                       config: Configuration,
                       solution: str) -> None:
+    """Formats the maze data and saves it to the configured output file.
+
+    The file includes the hexadecimal wall representation of the grid, 
+    entry/exit coordinates, and the solution path string.
+
+    Args:
+        maze (MazeGenerator): The generated maze object containing the grid.
+        config (Configuration): The configuration object containing the output path.
+        solution (str): A string representation of the solution path.
+    """
     maze_txt = ""
     for row in maze.grid:
         for cell in row:
@@ -34,6 +45,15 @@ def write_output_file(maze: MazeGenerator,
 
 
 def generate_and_solve(config: Configuration) -> tuple[MazeGenerator, str]:
+    """Initializes a maze generator, creates the maze, and finds the solution.
+
+    Args:
+        config (Configuration): Settings for width, height, seed, and algorithm.
+
+    Returns:
+        tuple[MazeGenerator, str]: A tuple containing the populated MazeGenerator 
+            instance and the solution string.
+    """
     maze = MazeGenerator(
         config.WIDTH, config.HEIGHT, config.ENTRY,
         config.EXIT, config.PERFECT, config.SEED, config.PATTERN_42
@@ -43,6 +63,14 @@ def generate_and_solve(config: Configuration) -> tuple[MazeGenerator, str]:
 
 
 def run_amazing(config: Configuration) -> None:
+    """Main application loop for the interactive maze interface.
+
+    Handles user input for regenerating mazes, toggling path visibility, 
+    cycling colors, and triggering animations.
+
+    Args:
+        config (Configuration): The initial configuration used to build the maze.
+    """
     maze, solution = generate_and_solve(config)
 
     active_seed: int | str = "random (no seed set)"
@@ -96,6 +124,15 @@ def run_amazing(config: Configuration) -> None:
 
 
 def play_animation(maze: MazeGenerator, history_file: str) -> None:
+    """Plays a frame-by-frame terminal animation of the maze generation process.
+
+    Reads from a JSON history file to simulate the 'visit', 'carve', and 
+    'backtrack' steps of the algorithm visually.
+
+    Args:
+        maze (MazeGenerator): The maze object used for dimensions and rendering context.
+        history_file (str): Path to the JSON file containing generation steps.
+    """
     frames_delay_rate = 0.05
 
     with open(history_file, 'r') as f:
