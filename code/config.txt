@@ -11,7 +11,7 @@ PERFECT=False
 # SEED=5
 
 # algorithm for maze creation
-ALGORITHM=DFS
+ALGORITHM=ELLER
 
 #embed 42 pattern
 PATTERN_42=True
