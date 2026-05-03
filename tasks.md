@@ -30,7 +30,7 @@
 [🛠️] whl package creation
 [] package specific documentation
 
-[] Unit testing
+[✅] Unit testing
 [] requirements.txt ??? we dont seem to need
 
 [🛠️] gitignore
