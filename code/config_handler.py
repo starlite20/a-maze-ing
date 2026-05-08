@@ -183,7 +183,7 @@ class Configuration():
         if algorithm not in ["", "DFS", "ELLER"]:
             raise ValueError(
                 f"Specified algorithm '{algorithm}' not supported.")
-        self.ALGORITHM = algorithm
+        self.ALGORITHM = algorithm if algorithm != "" else "ELLER"
 
     def set_output_file(self, output_file: str) -> None:
         """Sets the output destination path.

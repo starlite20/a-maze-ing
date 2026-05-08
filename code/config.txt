@@ -5,13 +5,6 @@ EXIT=10,11
 OUTPUT_FILE=output_maze.txt
 PERFECT=False
 
-#optional parameters
-#===========================
-#seed for randomness
-SEED=4226667253
-
-# algorithm for maze creation
-ALGORITHM=ELLER
-
-#embed 42 pattern
-PATTERN_42=True
+#SEED=15
+#ALGORITHM=ELLER
+#PATTERN_42=True

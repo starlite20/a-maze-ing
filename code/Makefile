@@ -16,7 +16,6 @@ venv:
 install: venv
 	$(VENV_PIP) install --upgrade pip
 	$(VENV_PIP) install flake8 mypy build
-# 	$(VENV_PIP) install -r requirements.txt
 	@echo "Dependencies installed in $(VENV)."
 
 run:
@@ -36,13 +35,13 @@ fclean: clean
 	@echo "Removed virtual environment."
 
 lint: install
-	$(VENV_PYTHON) -m flake8 .
-	$(VENV_PYTHON) -m mypy . --warn-return-any --warn-unused-ignores \
+	$(VENV_PYTHON) -m flake8 . --exclude .venv
+	$(VENV_PYTHON) -m mypy . --exclude .venv --warn-return-any --warn-unused-ignores \
 		--ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
 
 lint-strict: install
-	$(VENV_PYTHON) -m flake8 .
-	$(VENV_PYTHON) -m mypy . --strict
+	$(VENV_PYTHON) -m flake8 . --exclude .venv
+	$(VENV_PYTHON) -m mypy . --exclude .venv --strict
 
 package:
 	$(VENV_PYTHON) -m build
