@@ -7,6 +7,8 @@ __A-Maze-ing__ is a project focused on building a Maze Generator and Maze Solver
 
 Throughout the project, modularity and clean readability of the code is a key aspect, thereby allowing the core generation logic to be decoupled from configuration handling and execution flow. The engine handles the creation of complex grid-based structures, ensures full connectivity across the maze, and outputs the results in a standardized hexadecimal format.
 
+![alt text](preview.png)
+
 ### Key Features
 *   **Dual Generation Logic:** Supports **Depth-First Search (DFS) Algorithm** and **Eller's Algorithm**.
 *   **Perfect & Imperfect Mazes:** Create & solve both single-path spanning trees and looped mazes.
@@ -21,28 +23,50 @@ Throughout the project, modularity and clean readability of the code is a key as
 
 ### Installation and Setup
 
-1. Clone the repository:
-```
-git clone <repository_url>
-cd a-maze-ing
-```
+
+1. Executing the application
+To the run the program inside virtual enviroment, Simply type:
 
 ```
-pip install -r requirements.txt
+make install
 ```
 
+The makefile has been configured to run within a virtual environment directly.
+
+2. Running the Application
+To launch the main program (a_maze_ing.py) using the provided config.txt, execute:
 ```
-python3 -m venv venv
-source venv/bin/activate
+make run
+```
+3. Debugging
+If you need to step through the code using the Python Debugger (pdb):
+```
+make debug
+```
+🧹 Maintenance & Cleanup
+
+Clean temporary files: Removes caches (__pycache__, mypy, pytest) and output files.
+```
+make clean
+```
+Full reset: Performs a clean and deletes the virtual environment (.venv).
+```
+make fclean
+```
+🧪 Code Quality & Packaging
+Linting: Check code style and type hinting.
+```
+make lint
+```
+Strict Linting: Run highly restrictive type and style checks.
+```
+make lint-strict
+```
+Packaging: Build the project for distribution.
+```
+make package
 ```
 
-
-### Execution
-
-The program is executed by passing a configuration text file as a command-line argument.
-```
-python3 a_maze_ing.py config.txt
-```
 
 ## Configuration File Structure
 The configuration file follows a KEY=VALUE format. All parameters must be defined.
@@ -277,16 +301,14 @@ Reusable components include:
 
 From the root of the repository, inside a virtual environment:
 
-```bash
-pip install mazegen-*.whl
+```pip install mazegen-*.whl
 ## or
 pip install mazegen-*.tar.gz
 ```
 
 To build the package yourself from source:
 
-```bash
-python3 -m venv .venv
+```python3 -m venv .venv
 source .venv/bin/activate
 pip install build
 python3 -m build
